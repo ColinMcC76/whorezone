@@ -7,5 +7,5 @@ import react from '@vitejs/plugin-react';
 // name (e.g. '/mcwhorezone/') or keep it as '/' when serving from a custom domain.
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  base: '/mcwhorezone/',
 });
