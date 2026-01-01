@@ -20,50 +20,26 @@ export default function NavBar({ onPlayNow }: NavBarProps) {
   return (
     <>
       <nav className="navbar">
-        <div className="container">
-          <div className="brand">MCWhoreZone</div>
-          <ul className="nav-links">
-            <li>
-              <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-                Home
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/about" className={({ isActive }) => (isActive ? 'active' : '')}>
-                About
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/servers" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Servers
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/shabbot" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Shabbot
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/faq" className={({ isActive }) => (isActive ? 'active' : '')}>
-                FAQ
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/contact" className={({ isActive }) => (isActive ? 'active' : '')}>
-                Contact
-              </NavLink>
-            </li>
+        <div className="navbar-inner">
+          {/* LEFT */}
+          <div className="navbar-left">
+            <div className="brand">MCWhoreZone</div>
+          </div>
+
+          {/* CENTER */}
+          <ul className="nav-links navbar-center">
+            <li><NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>Home</NavLink></li>
+            <li><NavLink to="/about" className={({ isActive }) => (isActive ? 'active' : '')}>About</NavLink></li>
+            <li><NavLink to="/servers" className={({ isActive }) => (isActive ? 'active' : '')}>Servers</NavLink></li>
+            <li><NavLink to="/shabbot" className={({ isActive }) => (isActive ? 'active' : '')}>Shabbot</NavLink></li>
+            <li><NavLink to="/faq" className={({ isActive }) => (isActive ? 'active' : '')}>FAQ</NavLink></li>
+            <li><NavLink to="/contact" className={({ isActive }) => (isActive ? 'active' : '')}>Contact</NavLink></li>
           </ul>
-          <div className="actions">
-            <button className="cta" onClick={onPlayNow}>
-              Play Now
-            </button>
-            <a
-              href={siteConfig.discordInvite}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cta-outline"
-            >
+
+          {/* RIGHT */}
+          <div className="actions navbar-right">
+            <button className="cta" onClick={onPlayNow}>Play Now</button>
+            <a href={siteConfig.discordInvite} target="_blank" rel="noopener noreferrer" className="cta-outline">
               Join Discord
             </a>
             <button className="login" onClick={handleDiscordLogin}>
