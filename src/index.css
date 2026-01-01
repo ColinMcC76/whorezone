@@ -324,16 +324,18 @@ button,
 footer {
   background: var(--color-card);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 2rem 0;
+  padding: 3rem 1rem;
   color: var(--color-muted);
   font-size: 0.875rem;
   margin-top: 4rem;
+  text-align: center;
 }
 
-footer .footer-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2.5rem;
+  justify-items: center;
 }
 
 @media (min-width: 640px) {
@@ -341,6 +343,28 @@ footer .footer-grid {
     flex-direction: row;
     justify-content: space-between;
   }
+}
+
+.footer-col {
+  text-align: center;
+}
+
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-col li {
+  margin: 0.4rem 0;
+}
+
+.footer-disclaimer p {
+  max-width: 420px;
+  margin: 0 auto;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 footer h3 {
