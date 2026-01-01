@@ -7,14 +7,14 @@
 export const siteConfig = {
   javaServer: {
     address: 'play.mcwhorezone.com',
-    version: '1.20.x',
+    version: '1.21.11',
   },
   bedrockServer: {
-    address: 'bedrock.mcwhorezone.com',
+    address: 'br.mcwhorezone.com',
     port: '19132',
-    version: '1.20.x',
+    version: '1.21.11',
   },
-  discordInvite: 'https://discord.gg/your-invite',
+  discordInvite: 'https://discord.gg/aw6MYg3sEc',
   instagramHandle: 'mcwhorezone',
   email: 'support@mcwhorezone.com',
 };

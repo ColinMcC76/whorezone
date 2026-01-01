@@ -327,6 +327,7 @@ footer {
   padding: 2rem 0;
   color: var(--color-muted);
   font-size: 0.875rem;
+  margin-top: 4rem;
 }
 
 footer .footer-grid {
