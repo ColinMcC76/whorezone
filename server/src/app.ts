@@ -7,11 +7,13 @@ import {
   ensureSchemaAndSeed,
   findPostById,
   findPublishedPostBySlug,
+  findUserById,
   findUserByEmail,
   listAllPosts,
   listPublishedPosts,
   removePost,
   updatePost,
+  updateUserCredentials,
 } from './db';
 
 function createBlogAliasRouter(): Router {
@@ -67,6 +69,8 @@ export function createApp() {
       listAllPosts,
       findUserByEmail,
       createUser,
+      findUserById,
+      updateUserCredentials,
     }),
   );
 

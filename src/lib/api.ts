@@ -132,3 +132,14 @@ export const authApi = {
     login({ email, password }),
   register,
 };
+
+export function updateMyAccount(
+  token: string,
+  payload: { email: string; newPassword?: string },
+): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/me', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+}

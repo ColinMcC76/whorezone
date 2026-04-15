@@ -50,7 +50,11 @@ export default function App() {
             path="/admin/blog"
             element={
               <ProtectedRoute token={token}>
-                <AdminBlog token={token ?? ''} onAuthError={authHandlers.logout} />
+                <AdminBlog
+                  token={token ?? ''}
+                  onAuthError={authHandlers.logout}
+                  onTokenUpdate={authHandlers.login}
+                />
               </ProtectedRoute>
             }
           />

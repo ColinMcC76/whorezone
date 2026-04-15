@@ -21,12 +21,18 @@ export interface User {
   role: 'admin' | 'user';
 }
 
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
 export interface Credentials {
   email: string;
   password: string;
 }
 
 export interface AdminPostInput {
+  slug?: string;
   title: string;
   summary: string;
   content: string;
