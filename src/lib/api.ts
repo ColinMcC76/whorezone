@@ -10,14 +10,18 @@ interface ApiError {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
+  const method = (init?.method ?? 'GET').toUpperCase();
+  const hasBody = init?.body != null && init.body !== '';
+  const headers: HeadersInit = { ...(init?.headers ?? {}) };
+  if (hasBody && method !== 'GET' && method !== 'HEAD') {
+    (headers as Record<string, string>)['Content-Type'] =
+      (headers as Record<string, string>)['Content-Type'] ?? 'application/json';
+  }
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init?.headers ?? {}),
-      },
       ...init,
+      headers,
       signal: controller.signal,
     });
   } catch (error) {
