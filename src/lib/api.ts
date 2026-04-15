@@ -3,8 +3,31 @@ import type { AdminPostInput, AuthResponse, BlogPost, Credentials, User } from '
 const API_BASE =
   import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 
-interface ApiError {
-  error: string;
+type ApiErrorBody = { error: string | Record<string, unknown> };
+
+function formatApiError(body: ApiErrorBody): string {
+  const { error } = body;
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    const flat = error as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+    const lines: string[] = [];
+    if (Array.isArray(flat.formErrors) && flat.formErrors.length) {
+      lines.push(...flat.formErrors);
+    }
+    if (flat.fieldErrors) {
+      for (const [field, msgs] of Object.entries(flat.fieldErrors)) {
+        if (Array.isArray(msgs) && msgs.length) {
+          lines.push(`${field}: ${msgs.join(', ')}`);
+        }
+      }
+    }
+    if (lines.length) {
+      return lines.join(' ');
+    }
+  }
+  return 'Request failed';
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -36,8 +59,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const body = (await response
       .json()
-      .catch(() => ({ error: `Request failed (${response.status})` }))) as ApiError;
-    throw new Error(body.error || 'Request failed');
+      .catch(() => ({ error: `Request failed (${response.status})` }))) as ApiErrorBody;
+    throw new Error(formatApiError(body));
   }
 
   const contentType = response.headers.get('content-type') ?? '';
