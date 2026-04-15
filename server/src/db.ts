@@ -202,6 +202,14 @@ export const postRepo = {
 };
 
 export const userRepo = {
+  findById(id: number): (User & { passwordHash: string }) | null {
+    const row = db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(id);
+    if (!row) return null;
+    return {
+      ...mapUserRow(row),
+      passwordHash: row.passwordHash,
+    };
+  },
   findByEmail(email: string): (User & { passwordHash: string }) | null {
     const row = db.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').get(email);
     if (!row) return null;
@@ -240,6 +248,28 @@ export const userRepo = {
     return mapUserRow(
       db.prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)),
     );
+  },
+  updateCredentials(input: { id: number; email: string; passwordHash?: string }): User | null {
+    const existing = this.findById(input.id);
+    if (!existing) return null;
+    const now = new Date().toISOString();
+    db.prepare(
+      `
+        UPDATE users
+        SET email = @email,
+            passwordHash = COALESCE(@passwordHash, passwordHash),
+            updatedAt = @updatedAt
+        WHERE id = @id
+      `,
+    ).run({
+      id: input.id,
+      email: input.email,
+      passwordHash: input.passwordHash ?? null,
+      updatedAt: now,
+    });
+    const row = this.findById(input.id);
+    if (!row) return null;
+    return mapUserRow(row);
   },
 };
 
@@ -321,6 +351,10 @@ export function findUserByEmail(email: string): User | null {
   return userRepo.findByEmail(email);
 }
 
+export function findUserById(id: number): User | null {
+  return userRepo.findById(id);
+}
+
 export function createUser(input: {
   email: string;
   displayName: string;
@@ -328,6 +362,19 @@ export function createUser(input: {
   password: string;
 }): User {
   return userRepo.create(input);
+}
+
+export function updateUserCredentials(input: {
+  id: number;
+  email: string;
+  password?: string;
+}): User | null {
+  const passwordHash = input.password ? bcrypt.hashSync(input.password, 10) : undefined;
+  return userRepo.updateCredentials({
+    id: input.id,
+    email: input.email,
+    passwordHash,
+  });
 }
 
 export async function hashPassword(password: string): Promise<string> {

@@ -49,11 +49,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function fetchPublishedPosts(): Promise<BlogPost[]> {
-  return request<BlogPost[]>('/blog/posts');
+  return request<BlogPost[]>('/posts');
 }
 
 export function fetchPublishedPost(slug: string): Promise<BlogPost> {
-  return request<BlogPost>(`/blog/posts/${slug}`);
+  return request<BlogPost>(`/posts/${encodeURIComponent(slug)}`);
 }
 
 export async function login(credentials: Credentials): Promise<AuthResponse> {
@@ -132,3 +132,14 @@ export const authApi = {
     login({ email, password }),
   register,
 };
+
+export function updateMyAccount(
+  token: string,
+  payload: { email: string; newPassword?: string },
+): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/me', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+}

@@ -59,3 +59,13 @@ export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction
   req.user = user;
   next();
 }
+
+export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+  const user = parseToken(req);
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  req.user = user;
+  next();
+}

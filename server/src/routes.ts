@@ -1,17 +1,19 @@
 import { Express, Router } from 'express';
 import { z } from 'zod';
 import { BlogPost, PostStatus, User } from './types';
-import { generateToken, requireAdmin, AuthRequest } from './auth';
+import { generateToken, requireAdmin, requireAuth, AuthRequest } from './auth';
 import {
   createUser,
   ensureSchemaAndSeed,
   findPostById,
   findPublishedPostBySlug,
+  findUserById,
   findUserByEmail,
   listAllPosts,
   listPublishedPosts,
   removePost,
   updatePost,
+  updateUserCredentials,
   upsertPost,
   verifyPassword,
 } from './db';
@@ -51,10 +53,12 @@ interface RouteDeps {
     role: 'admin' | 'user';
     password: string;
   }) => User;
+  findUserById: (id: number) => User | null;
+  updateUserCredentials: (input: { id: number; email: string; password?: string }) => User | null;
 }
 
 const postPayloadSchema = z.object({
-  slug: z.string().min(2).max(120),
+  slug: z.string().min(2).max(120).optional(),
   title: z.string().min(2).max(180),
   summary: z.string().min(10).max(500),
   content: z.string().min(10),
@@ -72,6 +76,20 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(120),
 });
+
+const updateProfileSchema = z.object({
+  email: z.string().email(),
+  newPassword: z.string().min(8).max(120).optional().or(z.literal('')),
+});
+
+function toSlug(input: string): string {
+  const slug = input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || `post-${Date.now()}`;
+}
 
 export function createRouter(deps: RouteDeps): Router {
   const router = Router();
@@ -136,24 +154,44 @@ export function createRouter(deps: RouteDeps): Router {
     });
   });
 
+  router.patch('/auth/me', requireAuth, (req: AuthRequest, res) => {
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten() });
+    }
+    const current = deps.findUserById(req.user!.id);
+    if (!current) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const emailInUse = deps.findUserByEmail(parsed.data.email);
+    if (emailInUse && emailInUse.id !== req.user!.id) {
+      return res.status(409).json({ error: 'Email is already in use' });
+    }
+    const updated = deps.updateUserCredentials({
+      id: req.user!.id,
+      email: parsed.data.email,
+      password: parsed.data.newPassword || undefined,
+    });
+    if (!updated) {
+      return res.status(500).json({ error: 'Failed to update profile' });
+    }
+    const token = generateToken(updated);
+    return res.json({
+      token,
+      user: {
+        id: updated.id,
+        email: updated.email,
+        displayName: updated.displayName,
+        role: updated.role,
+      },
+    });
+  });
+
   router.get('/posts', (_req, res) => {
     res.json(deps.listPublishedPosts());
   });
 
-  // Backward-compatible aliases for earlier frontend bundles.
-  router.get('/blog/posts', (_req, res) => {
-    res.json(deps.listPublishedPosts());
-  });
-
   router.get('/posts/:slug', (req, res) => {
-    const post = deps.findPublishedPostBySlug(req.params.slug);
-    if (!post) {
-      return res.status(404).json({ error: 'Post not found' });
-    }
-    return res.json(post);
-  });
-
-  router.get('/blog/posts/:slug', (req, res) => {
     const post = deps.findPublishedPostBySlug(req.params.slug);
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
@@ -174,6 +212,7 @@ export function createRouter(deps: RouteDeps): Router {
     const publishedAt = parsed.data.status === 'published' ? new Date().toISOString() : null;
     const created = deps.createPost({
       ...parsed.data,
+      slug: parsed.data.slug ?? toSlug(parsed.data.title),
       publishedAt,
       authorId: req.user!.id,
     });
@@ -202,6 +241,7 @@ export function createRouter(deps: RouteDeps): Router {
 
     const updated = deps.updatePost(id, {
       ...parsed.data,
+      slug: parsed.data.slug ?? existing.slug,
       publishedAt,
     });
     return res.json(updated);
@@ -270,6 +310,8 @@ export function registerRoutes(app: Express): void {
     listAllPosts,
     findUserByEmail,
     createUser,
+    findUserById,
+    updateUserCredentials,
   });
   app.use('/api', router);
 }

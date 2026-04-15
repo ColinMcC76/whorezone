@@ -1,10 +1,12 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { blogApi } from '../lib/api';
+import { updateMyAccount } from '../lib/api';
 import { AdminPostInput, BlogPost } from '../lib/types';
 
 interface AdminBlogProps {
   token: string;
   onAuthError: () => void;
+  onTokenUpdate: (token: string) => void;
 }
 
 const initialForm: AdminPostInput = {
@@ -15,12 +17,16 @@ const initialForm: AdminPostInput = {
   status: 'draft',
 };
 
-export default function AdminBlog({ token, onAuthError }: AdminBlogProps) {
+export default function AdminBlog({ token, onAuthError, onTokenUpdate }: AdminBlogProps) {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<AdminPostInput>(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountMessage, setAccountMessage] = useState<string | null>(null);
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   const loadPosts = async () => {
     try {
@@ -36,6 +42,15 @@ export default function AdminBlog({ token, onAuthError }: AdminBlogProps) {
 
   useEffect(() => {
     void loadPosts();
+  }, [token]);
+
+  useEffect(() => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { email?: string };
+      setAccountEmail(payload.email ?? '');
+    } catch {
+      setAccountEmail('');
+    }
   }, [token]);
 
   const resetForm = () => {
@@ -117,6 +132,26 @@ export default function AdminBlog({ token, onAuthError }: AdminBlogProps) {
     }
   };
 
+  const onSaveAccount = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAccountError(null);
+    setAccountMessage(null);
+    try {
+      const result = await updateMyAccount(token, {
+        email: accountEmail,
+        newPassword: accountPassword || undefined,
+      });
+      onTokenUpdate(result.token);
+      setAccountPassword('');
+      setAccountMessage('Account updated successfully.');
+    } catch (err) {
+      setAccountError(err instanceof Error ? err.message : 'Failed to update account.');
+      if (err instanceof Error && err.message.includes('Unauthorized')) {
+        onAuthError();
+      }
+    }
+  };
+
   return (
     <div className="container page-shell">
       <h1 className="section-title">Admin Blog Dashboard</h1>
@@ -183,6 +218,35 @@ export default function AdminBlog({ token, onAuthError }: AdminBlogProps) {
 
       {message && <p className="success-message">{message}</p>}
       {error && <p className="error-message">{error}</p>}
+
+      <form onSubmit={onSaveAccount} className="admin-form" style={{ marginTop: '1rem' }}>
+        <h2>Account Settings</h2>
+        <label>
+          Email
+          <input
+            type="email"
+            value={accountEmail}
+            onChange={(event) => setAccountEmail(event.target.value)}
+            required
+          />
+        </label>
+        <label>
+          New Password (optional)
+          <input
+            type="password"
+            value={accountPassword}
+            onChange={(event) => setAccountPassword(event.target.value)}
+            minLength={8}
+          />
+        </label>
+        <div className="admin-form-actions">
+          <button className="cta" type="submit">
+            Save Account
+          </button>
+        </div>
+        {accountMessage && <p className="success-message">{accountMessage}</p>}
+        {accountError && <p className="error-message">{accountError}</p>}
+      </form>
 
       <div className="admin-table-wrap">
         <table className="admin-table">
