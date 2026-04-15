@@ -100,6 +100,7 @@ export function unpublishPost(token: string, id: number): Promise<BlogPost> {
 
 export const blogApi = {
   list: fetchPublishedPosts,
+  listPublished: fetchPublishedPosts,
   getBySlug: fetchPublishedPost,
   listAll: fetchAdminPosts,
   create: createPost,
