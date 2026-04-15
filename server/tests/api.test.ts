@@ -35,6 +35,13 @@ describe('API health and blog routes', () => {
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);
   });
+
+  it('returns published posts at legacy /api/blog/posts mount', async () => {
+    const response = await request(app).get('/api/blog/posts');
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+  });
 });
 
 describe('Admin post CRUD', () => {
