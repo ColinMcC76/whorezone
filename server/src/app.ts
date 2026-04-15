@@ -16,7 +16,20 @@ import {
 
 export function createApp() {
   const app = express();
-  app.use(cors());
+  const allowedOrigins = ['https://mcwhorezone.com', 'http://localhost:5173'];
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  };
+  app.use(cors(corsOptions));
+  app.options(/.*/, cors(corsOptions));
   app.use(express.json({ limit: '2mb' }));
 
   ensureSchemaAndSeed();
