@@ -92,3 +92,16 @@ API URL can be overridden with:
 Server port can be overridden with:
 
 - `API_PORT` (default `4000`)
+
+## GitHub Pages Notes
+
+If you host this repository on GitHub Pages:
+
+- Use the built frontend output (`dist`), not raw source files from the repo root.
+- For this project, the simple path is using `npm run deploy` to publish `dist` to the `gh-pages` branch.
+- In repository settings, point Pages to the `gh-pages` branch.
+
+This app now uses `HashRouter`, so direct refreshes on sub-pages work on static hosts like GitHub Pages.
+
+Important: GitHub Pages only hosts static files. The Express API in `server/` is not deployed there.  
+To use live blog CRUD/auth in production, deploy the API separately and set `VITE_API_URL` to that backend URL.
