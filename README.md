@@ -92,6 +92,18 @@ API URL can be overridden with:
 Server port can be overridden with:
 
 - `API_PORT` (default `4000`)
+- `PORT` (preferred in hosted platforms like Render)
+
+## Render deployment (API)
+
+If your Render deploys are timing out, ensure the service starts the API process (not watch/dev mode):
+
+- Build Command: `npm install`
+- Start Command: `npm run start:api`
+
+The server binds to `PORT` automatically (`PORT || API_PORT || 4000`).
+
+This repository also includes `render.yaml` with the same defaults.
 
 ## GitHub Pages Notes
 
