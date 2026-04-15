@@ -248,6 +248,88 @@ export function ensureSchemaAndSeed(): void {
   seedDatabase();
 }
 
+export function listPublishedPosts(): BlogPost[] {
+  return postRepo.listPublished();
+}
+
+export function listAllPosts(): BlogPost[] {
+  return postRepo.listAll();
+}
+
+export function findPublishedPostBySlug(slug: string): BlogPost | null {
+  const post = postRepo.getBySlug(slug);
+  if (!post || post.status !== 'published') {
+    return null;
+  }
+  return post;
+}
+
+export function findPostById(id: number): BlogPost | null {
+  return postRepo.getById(id);
+}
+
+export function createPost(input: {
+  slug: string;
+  title: string;
+  summary: string;
+  content: string;
+  coverImageUrl?: string | null;
+  status: BlogPostStatus;
+  publishedAt?: string | null;
+  authorId: number;
+}): BlogPost {
+  return postRepo.create({
+    slug: input.slug,
+    title: input.title,
+    summary: input.summary,
+    content: input.content,
+    coverImageUrl: input.coverImageUrl ?? null,
+    status: input.status,
+    publishedAt: input.publishedAt ?? null,
+    authorId: input.authorId,
+  });
+}
+
+export function updatePost(
+  id: number,
+  input: {
+    slug: string;
+    title: string;
+    summary: string;
+    content: string;
+    coverImageUrl?: string | null;
+    status: BlogPostStatus;
+    publishedAt?: string | null;
+  },
+): BlogPost | null {
+  return postRepo.update(id, {
+    slug: input.slug,
+    title: input.title,
+    summary: input.summary,
+    content: input.content,
+    coverImageUrl: input.coverImageUrl ?? null,
+    status: input.status,
+    publishedAt: input.publishedAt ?? null,
+  });
+}
+
+export function removePost(id: number): boolean {
+  return postRepo.delete(id);
+}
+
+export function findUserByEmail(email: string): User | null {
+  return userRepo.findByEmail(email);
+}
+
+export function createUser(input: {
+  email: string;
+  displayName: string;
+  role: 'admin' | 'user';
+  password: string;
+}): User {
+  return userRepo.create(input);
+}
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }

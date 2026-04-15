@@ -1,67 +1,94 @@
-# MCWhoreZone Website
+# Personal Hub Website
 
-This repository contains the source code for **MCWhoreZone**, a playful Minecraft community website built with **Vite** and **React Router**.  
-It uses a dark theme with a red accent, card‑based layouts and responsive design.  
-The site features a hero banner, benefits grid, server information, gallery, FAQ preview and a final call‑to‑action on the home page.  
-Additional pages include **About**, **Servers**, **Shabbot**, **FAQ** and **Contact**.
+This repository contains a personal website rebuilt as a creative hub with:
 
-## Getting Started Locally
+- Home, Blog, Projects, Resume, and Contact pages
+- A login-protected admin blog dashboard
+- Full blog CRUD API backed by SQLite
+- JWT auth and role-based admin checks
 
-1. Install dependencies (requires Node.js and npm):
+The app is a Vite + React frontend with an Express API in `server/`.
+
+## Tech Stack
+
+- Frontend: React, React Router, TypeScript, Vite
+- Backend: Express, TypeScript
+- Data: SQLite (`better-sqlite3`)
+- Auth: JWT (`jsonwebtoken`) + password hashing (`bcryptjs`)
+- Validation: Zod
+- Tests: Vitest + Supertest
+
+## Local Development
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the development server:
+2. Start frontend and backend together:
 
    ```bash
    npm run dev
    ```
 
-   The site will be served at `http://localhost:5173` by default. Vite supports hot module replacement, so changes will reload automatically.
+   - Frontend: `http://localhost:5173`
+   - API: `http://localhost:4000`
 
-3. Build for production:
+3. Build production frontend:
 
    ```bash
    npm run build
    ```
 
-   This generates static files in the `dist` directory.
-
-4. Preview the production build locally:
+4. Run tests:
 
    ```bash
-   npm run preview
+   npm test
    ```
 
-## Deployment to GitHub Pages
+## API Overview
 
-This project is configured with a deployment script that uses the [`gh-pages`](https://github.com/tschaub/gh-pages) package. To deploy:
+Base URL: `http://localhost:4000/api`
 
-1. Ensure you have a GitHub repository created and that you have push access.  
-2. Update the `homepage` field in `package.json` (e.g. `"homepage": "https://your-username.github.io/repository-name"`) and the `base` field in `vite.config.ts` (e.g. `base: '/repository-name/'`).  
-3. Commit your changes and push them to the `main` branch.
+Public endpoints:
 
-4. Publish the site by running:
+- `GET /health`
+- `GET /posts`
+- `GET /posts/:slug`
 
-   ```bash
-   npm run deploy
-   ```
+Auth endpoints:
 
-   This script builds the project and pushes the contents of the `dist` folder to the `gh-pages` branch. GitHub Pages will automatically serve the site from that branch.
+- `POST /auth/register`
+- `POST /auth/login`
 
-### Custom Domain
+Admin endpoints (Bearer token, admin role required):
 
-If you want to use a custom domain (e.g. `mcwhorezone.com`), create a file named `CNAME` in the root of the `dist` folder containing just your domain name.  
-When deploying via `gh-pages`, the file will be published and GitHub Pages will configure the custom domain for you.
+- `GET /admin/posts`
+- `POST /admin/posts`
+- `PUT /admin/posts/:id`
+- `DELETE /admin/posts/:id`
+- `PATCH /admin/posts/:id/status`
+
+## Seed Data
+
+On first run, the backend creates:
+
+- an admin user: `admin@example.com` / `change-me-admin`
+- one published sample post
+
+Update these credentials before deploying publicly.
 
 ## Configuration
 
-Server addresses, versions and social links are centralised in `src/config/siteConfig.ts`.  
-Update the values there when your IPs, ports or invite links change.
+Frontend branding and external links are configured in:
 
-## Acknowledgements
+- `src/config/siteConfig.ts`
 
-This project uses **React Router** to handle client‑side navigation. React Router allows the application to update the view without reloading the entire page, providing a seamless experience for users【94302198689173†L80-L90】.  
-Feel free to adapt and expand this project to suit your community’s needs.
+API URL can be overridden with:
+
+- `VITE_API_URL`
+
+Server port can be overridden with:
+
+- `API_PORT` (default `4000`)

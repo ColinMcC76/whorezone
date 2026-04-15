@@ -63,13 +63,13 @@ const postPayloadSchema = z.object({
 });
 
 const signupSchema = z.object({
-  email: z.email(),
+  email: z.string().email(),
   displayName: z.string().min(2).max(80),
   password: z.string().min(8).max(120),
 });
 
 const loginSchema = z.object({
-  email: z.email(),
+  email: z.string().email(),
   password: z.string().min(8).max(120),
 });
 
