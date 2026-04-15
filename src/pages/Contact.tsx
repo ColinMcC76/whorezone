@@ -1,37 +1,37 @@
-import React from 'react';
 import { siteConfig } from '../config/siteConfig';
 
-// Contact page encouraging users to join Discord for support.
+// Contact page with direct contact channels and social links.
 export default function Contact() {
   return (
     <div className="container" style={{ padding: '3rem 0', textAlign: 'center' }}>
-      <h2 className="section-title">Contact Us</h2>
+      <h2 className="section-title">Contact</h2>
       <p style={{ marginBottom: '1.5rem', color: 'var(--color-muted)' }}>
-        Need help or just want to chat? The best way to reach us is through
-        Discord. Our moderators and community members are ready to assist you.
+        Reach out for collaborations, project ideas, or just to say hello.
       </p>
       <a
         className="cta"
-        href={siteConfig.discordInvite}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={`mailto:${siteConfig.email}`}
         style={{ marginBottom: '1rem', display: 'inline-block' }}
       >
-        Join Discord
+        Email Me
       </a>
       <p style={{ marginTop: '1rem', marginBottom: '0.5rem', color: 'var(--color-muted)' }}>
-        You can also follow us on Instagram:
+        Social links
       </p>
       <a
         className="cta-outline"
-        href={`https://instagram.com/${siteConfig.instagramHandle}`}
+        href={siteConfig.socials.github}
         target="_blank"
         rel="noopener noreferrer"
+        style={{ marginRight: '0.75rem' }}
       >
-        @{siteConfig.instagramHandle}
+        GitHub
+      </a>
+      <a className="cta-outline" href={siteConfig.socials.linkedin} target="_blank" rel="noopener noreferrer">
+        LinkedIn
       </a>
       <p style={{ marginTop: '2rem', color: 'var(--color-muted)', fontSize: '0.9rem' }}>
-        Prefer email? Reach us at{' '}
+        Prefer direct email?{' '}
         <a
           href={`mailto:${siteConfig.email}`}
           style={{ color: 'var(--color-accent)' }}
