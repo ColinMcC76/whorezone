@@ -8,8 +8,14 @@ export default function BlogList() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    blogApi.listPublished()
-      .then(setPosts)
+    blogApi
+      .listPublished()
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid blog data format.');
+        }
+        setPosts(data);
+      })
       .catch(() => setError('Could not load blog posts yet. Ensure the API is running.'));
   }, []);
 

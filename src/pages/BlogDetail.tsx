@@ -10,7 +10,12 @@ export default function BlogDetail() {
 
   useEffect(() => {
     fetchPublishedPost(slug)
-      .then(setPost)
+      .then((data) => {
+        if (!data || typeof data !== 'object' || !('slug' in data)) {
+          throw new Error('Invalid post payload.');
+        }
+        setPost(data);
+      })
       .catch(() => setError('Post not found or unavailable.'));
   }, [slug]);
 
