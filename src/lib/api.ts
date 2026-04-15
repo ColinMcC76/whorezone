@@ -1,6 +1,7 @@
 import type { AdminPostInput, AuthResponse, BlogPost, Credentials, User } from './types';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api';
+const API_BASE =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 
 interface ApiError {
   error: string;
@@ -16,8 +17,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({ error: 'Request failed' }))) as ApiError;
+    const body = (await response
+      .json()
+      .catch(() => ({ error: `Request failed (${response.status})` }))) as ApiError;
     throw new Error(body.error || 'Request failed');
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Unexpected API response format.');
   }
 
   return response.json() as Promise<T>;
