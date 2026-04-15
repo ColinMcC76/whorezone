@@ -1,52 +1,63 @@
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import NavBar from './components/NavBar';
+import React, { useMemo, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Footer from './components/Footer';
-import Toast from './components/Toast';
-import Home from './pages/Home';
-import About from './pages/About';
-import Servers from './pages/Servers';
-import Shabbot from './pages/Shabbot';
-import Faq from './pages/Faq';
+import NavBar from './components/NavBar';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminBlog from './pages/AdminBlog';
+import BlogDetail from './pages/BlogDetail';
+import BlogList from './pages/BlogList';
 import Contact from './pages/Contact';
-import { siteConfig } from './config/siteConfig';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Projects from './pages/Projects';
+import Resume from './pages/Resume';
 
-// The top‑level component defines global layout and routing.
+const tokenStorageKey = 'personal-site-admin-token';
+
 export default function App() {
-  const [toast, setToast] = useState('');
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(tokenStorageKey));
 
-  // Show a toast message for a short duration
-  const showToast = (message: string) => {
-    setToast(message);
-    // Hide the toast after 3 seconds
-    setTimeout(() => setToast(''), 3000);
-  };
-
-  // Copy the Java server address to the clipboard and show a toast
-  const handlePlayNow = async () => {
-    try {
-      await navigator.clipboard.writeText(siteConfig.javaServer.address);
-      showToast('Server address copied to clipboard!');
-    } catch (err) {
-      showToast('Unable to copy to clipboard');
-    }
-  };
+  const authHandlers = useMemo(
+    () => ({
+      login: (newToken: string) => {
+        localStorage.setItem(tokenStorageKey, newToken);
+        setToken(newToken);
+      },
+      logout: () => {
+        localStorage.removeItem(tokenStorageKey);
+        setToken(null);
+      },
+    }),
+    [],
+  );
 
   return (
-    <div className="app">
-      <NavBar onPlayNow={handlePlayNow} showToast={showToast} />
+    <div className="app-shell">
+      <NavBar />
       <main>
         <Routes>
-          <Route path="/" element={<Home showToast={showToast} />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/servers" element={<Servers showToast={showToast} />} />
-          <Route path="/shabbot" element={<Shabbot />} />
-          <Route path="/faq" element={<Faq />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/blog" element={<BlogList />} />
+          <Route path="/blog/:slug" element={<BlogDetail />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/resume" element={<Resume />} />
           <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/login"
+            element={token ? <Navigate to="/admin/blog" replace /> : <Login onLogin={authHandlers.login} />}
+          />
+          <Route
+            path="/admin/blog"
+            element={
+              <ProtectedRoute token={token}>
+                <AdminBlog token={token ?? ''} onAuthError={authHandlers.logout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Footer />
-      {toast && <Toast message={toast} />}
     </div>
   );
 }
