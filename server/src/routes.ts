@@ -14,7 +14,6 @@ import {
   removePost,
   updatePost,
   updateUserCredentials,
-  upsertPost,
   verifyPassword,
 } from './db';
 
@@ -88,6 +87,17 @@ const updateProfileSchema = z.object({
   newPassword: z.string().min(8).max(120).optional().or(z.literal('')),
 });
 
+function zodErrorToMessage(err: z.ZodError): string {
+  const flat = err.flatten();
+  const lines: string[] = [...(flat.formErrors || [])];
+  for (const [field, msgs] of Object.entries(flat.fieldErrors || {})) {
+    if (Array.isArray(msgs) && msgs.length) {
+      lines.push(`${field}: ${msgs.join(', ')}`);
+    }
+  }
+  return lines.join(' ') || 'Validation failed';
+}
+
 function toSlug(input: string): string {
   const slug = input
     .toLowerCase()
@@ -107,7 +117,7 @@ export function createRouter(deps: RouteDeps): Router {
   router.post('/auth/register', async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
     }
 
     const existing = deps.findUserByEmail(parsed.data.email);
@@ -137,7 +147,7 @@ export function createRouter(deps: RouteDeps): Router {
   router.post('/auth/login', async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
     }
     const user = deps.findUserByEmail(parsed.data.email);
     if (!user) {
@@ -163,7 +173,7 @@ export function createRouter(deps: RouteDeps): Router {
   router.patch('/auth/me', requireAuth, (req: AuthRequest, res) => {
     const parsed = updateProfileSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
     }
     const current = deps.findUserById(req.user!.id);
     if (!current) {
@@ -212,7 +222,7 @@ export function createRouter(deps: RouteDeps): Router {
   router.post('/admin/posts', requireAdmin, (req: AuthRequest, res) => {
     const parsed = postPayloadSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
     }
 
     const publishedAt = parsed.data.status === 'published' ? new Date().toISOString() : null;
@@ -228,7 +238,7 @@ export function createRouter(deps: RouteDeps): Router {
   router.put('/admin/posts/:id', requireAdmin, (req, res) => {
     const parsed = postPayloadSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
     }
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) {
@@ -277,7 +287,7 @@ export function createRouter(deps: RouteDeps): Router {
       return res.status(400).json({ error: 'Invalid post id' });
     }
     if (!statusParsed.success) {
-      return res.status(400).json({ error: statusParsed.error.flatten() });
+      return res.status(400).json({ error: zodErrorToMessage(statusParsed.error) });
     }
 
     const existing = deps.findPostById(id);
@@ -310,7 +320,7 @@ export function registerRoutes(app: Express): void {
     listPublishedPosts,
     findPublishedPostBySlug,
     findPostById,
-    createPost: upsertPost,
+    createPost,
     updatePost,
     deletePost: removePost,
     listAllPosts,
