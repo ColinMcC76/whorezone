@@ -94,4 +94,23 @@ describe('Admin post CRUD', () => {
     const response = await request(app).get('/api/admin/posts');
     expect(response.status).toBe(401);
   });
+
+  it('creates a post with empty coverImageUrl (admin form default)', async () => {
+    const { token } = await loginAdmin();
+    const slug = `no-cover-${Date.now()}`;
+    const res = await request(app)
+      .post('/api/admin/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        slug,
+        title: 'No cover image',
+        summary: 'Summary line with enough characters.',
+        content: 'Body text with enough characters for validation.',
+        coverImageUrl: '',
+        status: 'draft',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.slug).toBe(slug);
+    expect(res.body.coverImageUrl).toBeNull();
+  });
 });

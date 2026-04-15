@@ -57,12 +57,18 @@ interface RouteDeps {
   updateUserCredentials: (input: { id: number; email: string; password?: string }) => User | null;
 }
 
+// Empty string from the admin form must not fail URL validation.
+const optionalCoverUrl = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined ? undefined : val),
+  z.string().url().optional(),
+);
+
 const postPayloadSchema = z.object({
   slug: z.string().min(2).max(120).optional(),
   title: z.string().min(2).max(180),
   summary: z.string().min(10).max(500),
   content: z.string().min(10),
-  coverImageUrl: z.string().url().optional().nullable(),
+  coverImageUrl: optionalCoverUrl,
   status: z.enum(['draft', 'published']).default('draft'),
 });
 
