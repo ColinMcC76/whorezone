@@ -9,15 +9,19 @@ export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setIsSubmitting(true);
     try {
       const result = await authApi.login(email, password);
       onLogin(result.token);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -44,13 +48,13 @@ export default function Login({ onLogin }: LoginProps) {
             required
           />
         </label>
-        <button className="cta" type="submit">
-          Login
+        <button className="cta" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Signing in...' : 'Login'}
         </button>
       </form>
       {error && <p className="error-message">{error}</p>}
       <p className="page-copy small-note">
-        Seed admin credentials: <code>admin@personalhub.local</code> / <code>changeme123</code>
+        Seed admin credentials: <code>admin@example.com</code> / <code>change-me-admin</code>
       </p>
     </div>
   );
