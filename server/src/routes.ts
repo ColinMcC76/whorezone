@@ -140,7 +140,20 @@ export function createRouter(deps: RouteDeps): Router {
     res.json(deps.listPublishedPosts());
   });
 
+  // Backward-compatible aliases for earlier frontend bundles.
+  router.get('/blog/posts', (_req, res) => {
+    res.json(deps.listPublishedPosts());
+  });
+
   router.get('/posts/:slug', (req, res) => {
+    const post = deps.findPublishedPostBySlug(req.params.slug);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    return res.json(post);
+  });
+
+  router.get('/blog/posts/:slug', (req, res) => {
     const post = deps.findPublishedPostBySlug(req.params.slug);
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
