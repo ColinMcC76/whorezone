@@ -19,6 +19,12 @@ function base64UrlEncode(data: Buffer | string): string {
     .replace(/=+$/, '');
 }
 
+function base64UrlDecodeToString(input: string): string {
+  const padded = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (padded.length % 4)) % 4;
+  return Buffer.from(padded + '='.repeat(padLen), 'base64').toString('utf8');
+}
+
 function getJwtSecret(): string {
   return process.env.JWT_SECRET ?? 'dev-secret-change-me';
 }

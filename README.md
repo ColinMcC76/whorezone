@@ -110,7 +110,7 @@ Set these on the **API** host (e.g. Render). If they are missing, the OAuth star
 **Shared**
 
 - `JWT_SECRET` — signing secret for JWTs and OAuth `state` tokens (use a long random string in production)
-- `FRONTEND_OAUTH_REDIRECT_URL` — where the API redirects after OAuth, e.g. `https://yoursite.com/#/auth/callback` (GitHub Pages + hash routes). Defaults to `http://localhost:5173/#/auth/callback` for local dev.
+- `FRONTEND_OAUTH_REDIRECT_URL` — **required in production**: where the API redirects the browser after Google/Discord (success or error). Use your real site, e.g. `https://mcwhorezone.com/#/auth/callback` (include the `#/auth/callback` path for this app). If this is unset on Render, users are sent to `http://localhost:5173/#/auth/callback` by mistake.
 
 **Google**
 
