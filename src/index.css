@@ -79,6 +79,19 @@ a {
   gap: 0.6rem;
 }
 
+.oauth-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.oauth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .cta,
 .cta-outline,
 button {
