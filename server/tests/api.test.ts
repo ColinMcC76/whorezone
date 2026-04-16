@@ -44,6 +44,21 @@ describe('API health and blog routes', () => {
   });
 });
 
+describe('Public registration', () => {
+  it('registers a normal user with role user', async () => {
+    const email = `reader-${Date.now()}@example.com`;
+    const res = await request(app).post('/api/auth/register').send({
+      email,
+      displayName: 'Test Reader',
+      password: 'password-one-two-three',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.user.role).toBe('user');
+    expect(res.body.user.authProvider).toBe('local');
+    expect(res.body.token).toBeTruthy();
+  });
+});
+
 describe('Admin post CRUD', () => {
   it('creates, updates, publishes, and deletes a post', async () => {
     const { token } = await loginAdmin();
