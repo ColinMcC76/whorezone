@@ -1,8 +1,9 @@
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import type { BlogPost, PostStatus, User } from './types';
+import type { AuthProvider, BlogPost, PostStatus, User } from './types';
 
 const dataDir = path.resolve(process.cwd(), 'server', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
@@ -18,6 +19,8 @@ export function runMigrations(): void {
       displayName TEXT NOT NULL,
       passwordHash TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
+      authProvider TEXT NOT NULL DEFAULT 'local' CHECK(authProvider IN ('local', 'google', 'discord')),
+      authSubject TEXT,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     );
@@ -37,6 +40,29 @@ export function runMigrations(): void {
       FOREIGN KEY(authorId) REFERENCES users(id)
     );
   `);
+  migrateUsersV2();
+}
+
+function migrateUsersV2(): void {
+  const readNames = () =>
+    new Set(
+      (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name),
+    );
+  let names = readNames();
+  if (!names.has('authProvider')) {
+    db.exec(`
+      ALTER TABLE users ADD COLUMN authProvider TEXT NOT NULL DEFAULT 'local';
+    `);
+    names = readNames();
+  }
+  if (!names.has('authSubject')) {
+    db.exec(`ALTER TABLE users ADD COLUMN authSubject TEXT;`);
+  }
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth_subject
+    ON users(authProvider, authSubject)
+    WHERE authSubject IS NOT NULL;
+  `);
 }
 
 export function seedDatabase(): void {
@@ -46,8 +72,8 @@ export function seedDatabase(): void {
     const passwordHash = bcrypt.hashSync('change-me-admin', 10);
     db.prepare(
       `
-      INSERT INTO users (email, displayName, passwordHash, role, createdAt, updatedAt)
-      VALUES (@email, @displayName, @passwordHash, @role, @createdAt, @updatedAt)
+      INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
+      VALUES (@email, @displayName, @passwordHash, @role, 'local', NULL, @createdAt, @updatedAt)
     `,
     ).run({
       email: 'admin@example.com',
@@ -108,7 +134,10 @@ function mapUserRow(row: any): User {
     id: row.id,
     email: row.email,
     displayName: row.displayName,
+    passwordHash: row.passwordHash,
     role: row.role,
+    authProvider: (row.authProvider ?? 'local') as AuthProvider,
+    authSubject: row.authSubject ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -202,39 +231,40 @@ export const postRepo = {
 };
 
 export const userRepo = {
-  findById(id: number): (User & { passwordHash: string }) | null {
+  findById(id: number): User | null {
     const row = db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(id);
     if (!row) return null;
-    return {
-      ...mapUserRow(row),
-      passwordHash: row.passwordHash,
-    };
+    return mapUserRow(row);
   },
-  findByEmail(email: string): (User & { passwordHash: string }) | null {
+  findByEmail(email: string): User | null {
     const row = db.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').get(email);
     if (!row) return null;
-    return {
-      ...mapUserRow(row),
-      passwordHash: row.passwordHash,
-    };
+    return mapUserRow(row);
+  },
+  findByProviderSubject(provider: AuthProvider, subject: string): User | null {
+    const row = db
+      .prepare('SELECT * FROM users WHERE authProvider = ? AND authSubject = ? LIMIT 1')
+      .get(provider, subject);
+    if (!row) return null;
+    return mapUserRow(row);
   },
   list(): User[] {
     const rows = db.prepare('SELECT * FROM users ORDER BY datetime(createdAt) DESC').all();
     return rows.map(mapUserRow);
   },
-  create(input: {
+  async create(input: {
     email: string;
     displayName: string;
     role: 'admin' | 'user';
     password: string;
-  }): User {
+  }): Promise<User> {
     const now = new Date().toISOString();
-    const passwordHash = bcrypt.hashSync(input.password, 10);
+    const passwordHash = await hashPassword(input.password);
     const result = db
       .prepare(
         `
-        INSERT INTO users (email, displayName, passwordHash, role, createdAt, updatedAt)
-        VALUES (@email, @displayName, @passwordHash, @role, @createdAt, @updatedAt)
+        INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
+        VALUES (@email, @displayName, @passwordHash, @role, 'local', NULL, @createdAt, @updatedAt)
       `,
       )
       .run({
@@ -268,8 +298,7 @@ export const userRepo = {
       updatedAt: now,
     });
     const row = this.findById(input.id);
-    if (!row) return null;
-    return mapUserRow(row);
+    return row;
   },
 };
 
@@ -355,21 +384,55 @@ export function findUserById(id: number): User | null {
   return userRepo.findById(id);
 }
 
-export function createUser(input: {
+export function findUserByProviderSubject(provider: AuthProvider, subject: string): User | null {
+  return userRepo.findByProviderSubject(provider, subject);
+}
+
+export async function createUser(input: {
   email: string;
   displayName: string;
   role: 'admin' | 'user';
   password: string;
-}): User {
+}): Promise<User> {
   return userRepo.create(input);
 }
 
-export function updateUserCredentials(input: {
+export async function createOAuthUser(input: {
+  email: string;
+  displayName: string;
+  role: 'admin' | 'user';
+  provider: AuthProvider;
+  subject: string;
+}): Promise<User> {
+  const now = new Date().toISOString();
+  const randomSecret = crypto.randomBytes(32).toString('base64url');
+  const passwordHash = await hashPassword(`oauth:${input.provider}:${randomSecret}`);
+  const result = db
+    .prepare(
+      `
+      INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
+      VALUES (@email, @displayName, @passwordHash, @role, @authProvider, @authSubject, @createdAt, @updatedAt)
+    `,
+    )
+    .run({
+      email: input.email,
+      displayName: input.displayName,
+      passwordHash,
+      role: input.role,
+      authProvider: input.provider,
+      authSubject: input.subject,
+      createdAt: now,
+      updatedAt: now,
+    });
+  return mapUserRow(db.prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)));
+}
+
+export async function updateUserCredentials(input: {
   id: number;
   email: string;
   password?: string;
-}): User | null {
-  const passwordHash = input.password ? bcrypt.hashSync(input.password, 10) : undefined;
+}): Promise<User | null> {
+  const passwordHash = input.password ? await hashPassword(input.password) : undefined;
   return userRepo.updateCredentials({
     id: input.id,
     email: input.email,

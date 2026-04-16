@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Express, Router } from 'express';
 import { z } from 'zod';
 import { BlogPost, PostStatus, User } from './types';
@@ -16,6 +17,14 @@ import {
   updateUserCredentials,
   verifyPassword,
 } from './db';
+import {
+  getDiscordAuthUrl,
+  getGoogleAuthUrl,
+  oauthCallback,
+  signOAuthState,
+  verifyOAuthState,
+} from './oauth';
+import { consumeOAuthTicket, issueOAuthTicket } from './oauthTickets';
 
 interface RouteDeps {
   listPublishedPosts: () => BlogPost[];
@@ -51,9 +60,13 @@ interface RouteDeps {
     displayName: string;
     role: 'admin' | 'user';
     password: string;
-  }) => User;
+  }) => Promise<User>;
   findUserById: (id: number) => User | null;
-  updateUserCredentials: (input: { id: number; email: string; password?: string }) => User | null;
+  updateUserCredentials: (input: {
+    id: number;
+    email: string;
+    password?: string;
+  }) => Promise<User | null>;
 }
 
 // Empty string from the admin form must not fail URL validation.
@@ -87,6 +100,24 @@ const updateProfileSchema = z.object({
   newPassword: z.string().min(8).max(120).optional().or(z.literal('')),
 });
 
+const oauthConsumeSchema = z.object({
+  ticket: z.string().min(10).max(500),
+});
+
+function buildOAuthRedirect(ticket: string): string {
+  const base =
+    process.env.FRONTEND_OAUTH_REDIRECT_URL?.trim() || 'http://localhost:5173/#/auth/callback';
+  const joiner = base.includes('?') ? '&' : '?';
+  return `${base}${joiner}ticket=${encodeURIComponent(ticket)}`;
+}
+
+function buildOAuthErrorRedirect(message: string): string {
+  const base =
+    process.env.FRONTEND_OAUTH_REDIRECT_URL?.trim() || 'http://localhost:5173/#/auth/callback';
+  const joiner = base.includes('?') ? '&' : '?';
+  return `${base}${joiner}oauth_error=${encodeURIComponent(message)}`;
+}
+
 function zodErrorToMessage(err: z.ZodError): string {
   const flat = err.flatten();
   const lines: string[] = [...(flat.formErrors || [])];
@@ -114,6 +145,80 @@ export function createRouter(deps: RouteDeps): Router {
     res.json({ ok: true });
   });
 
+  router.get('/auth/oauth/:provider/start', (req, res) => {
+    const provider = req.params.provider;
+    if (provider !== 'google' && provider !== 'discord') {
+      return res.status(404).json({ error: 'Unknown provider' });
+    }
+    const stateToken = signOAuthState({
+      provider,
+      nonce: crypto.randomBytes(16).toString('base64url'),
+      exp: Date.now() + 10 * 60 * 1000,
+    });
+    try {
+      const url = provider === 'google' ? getGoogleAuthUrl(stateToken) : getDiscordAuthUrl(stateToken);
+      return res.redirect(302, url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'OAuth is not configured';
+      return res.status(503).json({ error: message });
+    }
+  });
+
+  router.get('/auth/oauth/callback', async (req, res) => {
+    const err = req.query.error;
+    if (typeof err === 'string' && err) {
+      return res.redirect(302, buildOAuthErrorRedirect('Sign-in was cancelled or denied.'));
+    }
+    const code = req.query.code;
+    const state = req.query.state;
+    if (typeof code !== 'string' || typeof state !== 'string') {
+      return res.redirect(302, buildOAuthErrorRedirect('Missing OAuth parameters.'));
+    }
+    const statePayload = verifyOAuthState(state);
+    if (!statePayload) {
+      return res.redirect(302, buildOAuthErrorRedirect('Invalid or expired OAuth state.'));
+    }
+    try {
+      const result = await oauthCallback(statePayload.provider, code);
+      const ticket = issueOAuthTicket(result.token, result.user);
+      return res.redirect(302, buildOAuthRedirect(ticket));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'OAuth sign-in failed';
+      return res.redirect(302, buildOAuthErrorRedirect(message));
+    }
+  });
+
+  router.post('/auth/oauth/consume', (req, res) => {
+    const parsed = oauthConsumeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
+    }
+    const consumed = consumeOAuthTicket(parsed.data.ticket);
+    if (!consumed) {
+      return res.status(400).json({ error: 'Invalid or expired sign-in ticket' });
+    }
+    return res.json({
+      token: consumed.token,
+      user: consumed.user,
+    });
+  });
+
+  router.get('/auth/me', requireAuth, (req: AuthRequest, res) => {
+    const user = deps.findUserById(req.user!.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        authProvider: user.authProvider,
+      },
+    });
+  });
+
   router.post('/auth/register', async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -125,10 +230,10 @@ export function createRouter(deps: RouteDeps): Router {
       return res.status(409).json({ error: 'User already exists' });
     }
 
-    const user = deps.createUser({
+    const user = await deps.createUser({
       email: parsed.data.email,
       displayName: parsed.data.displayName,
-      role: deps.findUserByEmail('admin@personalhub.dev') ? 'user' : 'admin',
+      role: 'user',
       password: parsed.data.password,
     });
 
@@ -140,6 +245,7 @@ export function createRouter(deps: RouteDeps): Router {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+        authProvider: user.authProvider,
       },
     });
   });
@@ -152,6 +258,11 @@ export function createRouter(deps: RouteDeps): Router {
     const user = deps.findUserByEmail(parsed.data.email);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({
+        error: `This account uses ${user.authProvider} sign-in. Please use that provider instead.`,
+      });
     }
     const isValid = await verifyPassword(parsed.data.password, user.passwordHash);
     if (!isValid) {
@@ -166,11 +277,12 @@ export function createRouter(deps: RouteDeps): Router {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+        authProvider: user.authProvider,
       },
     });
   });
 
-  router.patch('/auth/me', requireAuth, (req: AuthRequest, res) => {
+  router.patch('/auth/me', requireAuth, async (req: AuthRequest, res) => {
     const parsed = updateProfileSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: zodErrorToMessage(parsed.error) });
@@ -179,11 +291,16 @@ export function createRouter(deps: RouteDeps): Router {
     if (!current) {
       return res.status(404).json({ error: 'User not found' });
     }
+    if (current.authProvider !== 'local') {
+      return res.status(400).json({
+        error: 'Password changes for OAuth accounts must be done through your Google or Discord account.',
+      });
+    }
     const emailInUse = deps.findUserByEmail(parsed.data.email);
     if (emailInUse && emailInUse.id !== req.user!.id) {
       return res.status(409).json({ error: 'Email is already in use' });
     }
-    const updated = deps.updateUserCredentials({
+    const updated = await deps.updateUserCredentials({
       id: req.user!.id,
       email: parsed.data.email,
       password: parsed.data.newPassword || undefined,
@@ -199,6 +316,7 @@ export function createRouter(deps: RouteDeps): Router {
         email: updated.email,
         displayName: updated.displayName,
         role: updated.role,
+        authProvider: updated.authProvider,
       },
     });
   });

@@ -14,11 +14,14 @@ export interface BlogPost {
   authorId: number;
 }
 
+export type AuthProvider = 'local' | 'google' | 'discord';
+
 export interface User {
   id: number;
   email: string;
   displayName: string;
   role: 'admin' | 'user';
+  authProvider: AuthProvider;
 }
 
 export interface AuthResponse {

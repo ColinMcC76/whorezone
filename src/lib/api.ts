@@ -3,6 +3,9 @@ import type { AdminPostInput, AuthResponse, BlogPost, Credentials, User } from '
 const API_BASE =
   import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 
+/** Origin of the API (no trailing /api) — used for OAuth browser redirects. */
+export const API_ORIGIN = API_BASE.replace(/\/?api\/?$/, '') || API_BASE;
+
 type ApiErrorBody = { error: string | Record<string, unknown> };
 
 function formatApiError(body: ApiErrorBody): string {
@@ -93,6 +96,20 @@ export async function register(credentials: Credentials & { displayName: string 
   });
 }
 
+export async function consumeOAuthTicket(ticket: string): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/oauth/consume', {
+    method: 'POST',
+    body: JSON.stringify({ ticket }),
+  });
+}
+
+export async function getMe(token: string): Promise<User> {
+  const res = await request<{ user: User }>('/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.user;
+}
+
 export function fetchAdminPosts(token: string): Promise<BlogPost[]> {
   return request<BlogPost[]>('/admin/posts', {
     headers: { Authorization: `Bearer ${token}` },
@@ -154,6 +171,8 @@ export const authApi = {
   login: async (email: string, password: string): Promise<{ token: string; user: User }> =>
     login({ email, password }),
   register,
+  consumeOAuthTicket,
+  getMe,
 };
 
 export function updateMyAccount(
