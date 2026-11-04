@@ -137,23 +137,25 @@ The server binds to `PORT` automatically (`PORT || API_PORT || 4000`).
 
 This repository also includes `render.yaml` with the same defaults.
 
-## Vercel (frontend)
+## Vercel (site and API)
 
-The frontend is a static Vite app. `vercel.json` tells Vercel to run `npm run build` and publish `dist`, with an SPA fallback to `index.html`.
+Vercel hosts the Vite frontend and the Express API together. `vercel.json` publishes `dist` and sends `/api/*` to the function in `api/index.ts`. Production builds call that function on the same host (`/api`), so `VITE_API_URL` is unset.
 
-The Express API stays on Render. SQLite cannot persist on Vercel’s serverless filesystem. Production builds read `VITE_API_URL` from `.env.production` (`https://whorezone-api.onrender.com/api`). The API already allows `https://mcwhorezone.com` and `https://www.mcwhorezone.com`, and also `https://*.vercel.app` so a fresh Vercel URL can call the API before the custom domain is attached. Redeploy the Render API after that CORS change lands on `main`.
+The API uses Node’s built-in SQLite (`node:sqlite`, Node 22). On Vercel the file lives in `/tmp`, which is wiped on a cold start. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store to the project so `BLOB_READ_WRITE_TOKEN` is set. The API then saves `mcwhorezone/app.db` as a private blob and restores it on the next boot. Without that token, the welcome post and the seeded admin account come back on each cold start, and new posts do not stick.
 
-`mcwhorezone.com` can belong to only one Vercel project. It is currently attached to a different Vercel app (the live site is that other project). To serve this repo on the domain:
+Set `JWT_SECRET` on the Vercel project before using login in production. OAuth still needs the Google and Discord variables from the section above. On Vercel, `FRONTEND_OAUTH_REDIRECT_URL` defaults to `https://www.mcwhorezone.com/#/auth/callback`.
 
-1. Import `ColinMcC76/whorezone` into Vercel (framework Vite, output `dist`). No extra env vars are required for the frontend.
-2. In the other Vercel project, remove `mcwhorezone.com` and `www.mcwhorezone.com`.
+`mcwhorezone.com` can belong to only one Vercel project. Import this repo (framework Vite) and attach the domain there.
+
+1. Import `ColinMcC76/whorezone` into Vercel (framework Vite). Add a Blob store if posts should survive restarts, and set `JWT_SECRET`.
+2. In any other Vercel project, remove `mcwhorezone.com` and `www.mcwhorezone.com`.
 3. Add both hostnames to this project. Vercel will show the DNS targets.
 4. In Cloudflare DNS for `mcwhorezone.com`, point the records at those targets. The usual Cloudflare records are:
    - `www` CNAME to `cname.vercel-dns.com` (or the project-specific `*.vercel-dns.com` host Vercel displays)
    - apex (`@`) CNAME to the same target (Cloudflare flattens apex CNAMEs)
    - Proxy status: DNS only (grey cloud) until Vercel marks the domain valid
 
-Today `www` is a CNAME to `57c75cc53d766fbe.vercel-dns-017.com`, which belongs to the other project. Leaving that record in place keeps the domain on that app.
+Redeploy the Vercel project after this lands so `/api/health` and `/api/posts` are served from the site instead of the old Render host.
 
 ## GitHub Pages Notes
 

@@ -3,8 +3,11 @@ import type { AdminPostInput, AuthResponse, BlogPost, Credentials, User } from '
 const API_BASE =
   import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 
-/** Origin of the API (no trailing /api) — used for OAuth browser redirects. */
-export const API_ORIGIN = API_BASE.replace(/\/?api\/?$/, '') || API_BASE;
+/**
+ * Origin of the API with no trailing /api.
+ * Empty when the API is same-origin (`/api`), so OAuth links stay on this site.
+ */
+export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
 
 type ApiErrorBody = { error: string | Record<string, unknown> };
 

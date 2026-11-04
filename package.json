@@ -2,6 +2,9 @@
   "name": "personal-hub",
   "private": true,
   "version": "0.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "description": "A creative personal website with blog CRUD and admin auth.",
   "scripts": {
     "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
@@ -15,8 +18,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.9.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

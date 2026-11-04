@@ -58,6 +58,12 @@ describe('API health and blog routes', () => {
     expect(response.body.length).toBeGreaterThan(0);
   });
 
+  it('returns published posts when the /api prefix is already stripped', async () => {
+    const response = await request(app).get('/posts');
+    expect(response.status).toBe(200);
+    expect(response.body.length).toBeGreaterThan(0);
+  });
+
   it('returns published posts at legacy /api/blog/posts mount', async () => {
     const response = await request(app).get('/api/blog/posts');
     expect(response.status).toBe(200);
