@@ -43,6 +43,26 @@ const fallbackPosts = [
   },
 ];
 
+function firstQuery(value) {
+  if (Array.isArray(value)) return value[0];
+  return typeof value === 'string' ? value : '';
+}
+
+function applyIncomingPath(req) {
+  const url = new URL(req.url || '/', 'https://mcwhorezone.local');
+  const queryPath = firstQuery(req.query && req.query.path) || url.searchParams.get('path') || '';
+  const slug = firstQuery(req.query && req.query.slug) || url.searchParams.get('slug') || '';
+  if (queryPath) {
+    const cleaned = String(queryPath).replace(/^\/+/, '').replace(/^api\//, '');
+    req.url = `/api/${cleaned}`;
+    return;
+  }
+  const path = requestPath(req.url);
+  if (slug && path !== `/posts/${slug}`) {
+    req.url = `/api/posts/${encodeURIComponent(slug)}`;
+  }
+}
+
 function requestPath(url) {
   const pathname = String(url || '/').split('?')[0];
   const trimmed = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
@@ -133,6 +153,7 @@ function writeResponse(res, response) {
 }
 
 async function handler(req, res) {
+  applyIncomingPath(req);
   const publicRead = isPublicRead(req);
   let timedOut = false;
   const timeout = publicRead
