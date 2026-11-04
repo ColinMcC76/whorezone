@@ -70,12 +70,28 @@ async function restoreFromBlob(): Promise<void> {
   reindex();
 }
 
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(undefined), ms);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function readyStore(): Promise<void> {
   if (!ready) {
     ready = (async () => {
       await seed();
       try {
-        await restoreFromBlob();
+        await withTimeout(restoreFromBlob(), 1200);
       } catch (error) {
         console.error('Blog database restore skipped', error);
       }
@@ -89,13 +105,16 @@ export async function persistStore(): Promise<void> {
   if (!token) return;
   try {
     const { put } = await import('@vercel/blob');
-    await put(BLOB_PATH, JSON.stringify({ users, posts }), {
-      access: 'private',
-      token,
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: 'application/json',
-    });
+    await withTimeout(
+      put(BLOB_PATH, JSON.stringify({ users, posts }), {
+        access: 'private',
+        token,
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: 'application/json',
+      }),
+      4000,
+    );
   } catch (error) {
     console.error('Blog database save skipped', error);
   }
