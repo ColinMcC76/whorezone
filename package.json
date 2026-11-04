@@ -9,7 +9,7 @@
     "dev:api": "tsx watch server/src/index.ts",
     "start:api": "tsx server/src/index.ts",
     "start": "npm run start:api",
-    "build": "vite build",
+    "build": "node scripts/build-api.mjs && vite build",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
     "test": "vitest run"

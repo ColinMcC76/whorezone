@@ -139,7 +139,7 @@ This repository also includes `render.yaml` with the same defaults.
 
 ## Vercel (site and API)
 
-Vercel hosts the Vite frontend and the API together. `api/[...path].ts` is one Web `fetch` function for every `/api/*` route, and production builds call it on the same host, so `VITE_API_URL` is unset. Published posts are public: `/api/posts` does not require a login.
+Vercel hosts the Vite frontend and the API together. `api/[...path].js` is one Node function for every `/api/*` route, and production builds call it on the same host, so `VITE_API_URL` is unset. Published posts are public: `/api/posts` does not require a login. The read-write Blob token stays in the Vercel project environment. Do not put it in `.env.production`.
 
 The blog ships with sample posts in the repo, so the first response already has something to render. There is no SQLite module in the function. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store (`BLOB_READ_WRITE_TOKEN`) if new posts and accounts should survive a cold start. Without that token, the sample posts and the seeded admin account come back on each cold start.
 
