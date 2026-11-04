@@ -139,9 +139,9 @@ This repository also includes `render.yaml` with the same defaults.
 
 ## Vercel (site and API)
 
-Vercel hosts the Vite frontend and the Express API together. `vercel.json` publishes `dist` and sends `/api/*` to the function in `api/index.ts`. Production builds call that function on the same host (`/api`), so `VITE_API_URL` is unset.
+Vercel hosts the Vite frontend and the API together. `api/[...path].ts` is one Web `fetch` function for every `/api/*` route, and production builds call it on the same host, so `VITE_API_URL` is unset. Published posts are public: `/api/posts` does not require a login.
 
-The API uses sql.js (SQLite compiled to WebAssembly) so the function does not depend on a Node build of SQLite. On Vercel the file lives in `/tmp`, which is wiped on a cold start. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store to the project so `BLOB_READ_WRITE_TOKEN` is set. The API then saves `mcwhorezone/app.db` as a private blob and restores it on the next boot. Without that token, the welcome post and the seeded admin account come back on each cold start, and new posts do not stick.
+The blog ships with sample posts in the repo, so the first response already has something to render. There is no SQLite module in the function. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store (`BLOB_READ_WRITE_TOKEN`) if new posts and accounts should survive a cold start. Without that token, the sample posts and the seeded admin account come back on each cold start.
 
 Set `JWT_SECRET` on the Vercel project before using login in production. OAuth still needs the Google and Discord variables from the section above. On Vercel, `FRONTEND_OAUTH_REDIRECT_URL` defaults to `https://www.mcwhorezone.com/#/auth/callback`.
 
@@ -167,5 +167,5 @@ If you host this repository on GitHub Pages:
 
 This app now uses `HashRouter`, so direct refreshes on sub-pages work on static hosts like GitHub Pages.
 
-Important: GitHub Pages only hosts static files. The Express API in `server/` is not deployed there.  
+Important: GitHub Pages only hosts static files. The API in `server/` is not deployed there.  
 To use live blog CRUD/auth in production, deploy the API separately and set `VITE_API_URL` to that backend URL.

@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import type { AuthProvider, User } from './types';
-import { generateToken } from './auth';
-import { createOAuthUser, findUserByProviderSubject } from './db';
+import { generateToken } from './tokens';
+import { createOAuthUser, findUserByProviderSubject } from './store';
 
 const oauthStateSchema = z.object({
   provider: z.enum(['google', 'discord']),
@@ -171,7 +171,7 @@ export async function completeGoogleOAuth(code: string): Promise<{ token: string
       subject: profile.sub,
     });
   }
-  return { token: generateToken(user), user };
+  return { token: await generateToken(user), user };
 }
 
 const discordUserSchema = z.object({
@@ -231,7 +231,7 @@ export async function completeDiscordOAuth(code: string): Promise<{ token: strin
       subject,
     });
   }
-  return { token: generateToken(user), user };
+  return { token: await generateToken(user), user };
 }
 
 export async function oauthCallback(
