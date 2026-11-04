@@ -137,6 +137,24 @@ The server binds to `PORT` automatically (`PORT || API_PORT || 4000`).
 
 This repository also includes `render.yaml` with the same defaults.
 
+## Vercel (frontend)
+
+The frontend is a static Vite app. `vercel.json` tells Vercel to run `npm run build` and publish `dist`, with an SPA fallback to `index.html`.
+
+The Express API stays on Render. SQLite cannot persist on Vercel’s serverless filesystem. Production builds read `VITE_API_URL` from `.env.production` (`https://whorezone-api.onrender.com/api`). The API already allows `https://mcwhorezone.com` and `https://www.mcwhorezone.com`, and also `https://*.vercel.app` so a fresh Vercel URL can call the API before the custom domain is attached. Redeploy the Render API after that CORS change lands on `main`.
+
+`mcwhorezone.com` can belong to only one Vercel project. It is currently attached to a different Vercel app (the live site is that other project). To serve this repo on the domain:
+
+1. Import `ColinMcC76/whorezone` into Vercel (framework Vite, output `dist`). No extra env vars are required for the frontend.
+2. In the other Vercel project, remove `mcwhorezone.com` and `www.mcwhorezone.com`.
+3. Add both hostnames to this project. Vercel will show the DNS targets.
+4. In Cloudflare DNS for `mcwhorezone.com`, point the records at those targets. The usual Cloudflare records are:
+   - `www` CNAME to `cname.vercel-dns.com` (or the project-specific `*.vercel-dns.com` host Vercel displays)
+   - apex (`@`) CNAME to the same target (Cloudflare flattens apex CNAMEs)
+   - Proxy status: DNS only (grey cloud) until Vercel marks the domain valid
+
+Today `www` is a CNAME to `57c75cc53d766fbe.vercel-dns-017.com`, which belongs to the other project. Leaving that record in place keeps the domain on that app.
+
 ## GitHub Pages Notes
 
 If you host this repository on GitHub Pages:

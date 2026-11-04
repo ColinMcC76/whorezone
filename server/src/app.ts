@@ -16,6 +16,28 @@ import {
   updateUserCredentials,
 } from './db';
 
+const allowedOrigins = [
+  'https://mcwhorezone.com',
+  'https://www.mcwhorezone.com',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+export function isAllowedBrowserOrigin(origin: string | undefined): boolean {
+  if (!origin) {
+    return true;
+  }
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+  try {
+    const url = new URL(origin);
+    return url.protocol === 'https:' && url.hostname.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
+
 function createBlogAliasRouter(): Router {
   const r = Router();
   r.get('/posts', (_req, res) => {
@@ -33,15 +55,9 @@ function createBlogAliasRouter(): Router {
 
 export function createApp() {
   const app = express();
-  const allowedOrigins = [
-    'https://mcwhorezone.com',
-    'https://www.mcwhorezone.com',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ];
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isAllowedBrowserOrigin(origin)) {
         callback(null, true);
         return;
       }

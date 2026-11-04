@@ -18,6 +18,28 @@ async function loginAdmin(): Promise<AuthResult> {
   return { token: response.body.token as string };
 }
 
+describe('CORS', () => {
+  it('allows the custom domain and Vercel preview hosts', async () => {
+    const production = await request(app).get('/api/health').set('Origin', 'https://www.mcwhorezone.com');
+    expect(production.status).toBe(200);
+    expect(production.headers['access-control-allow-origin']).toBe('https://www.mcwhorezone.com');
+
+    const preview = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://whorezone-git-main-colin.vercel.app');
+    expect(preview.status).toBe(200);
+    expect(preview.headers['access-control-allow-origin']).toBe(
+      'https://whorezone-git-main-colin.vercel.app',
+    );
+  });
+
+  it('rejects unrelated browser origins', async () => {
+    const response = await request(app).get('/api/health').set('Origin', 'https://evil.example');
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
+
 describe('API health and blog routes', () => {
   beforeAll(async () => {
     await loginAdmin();
