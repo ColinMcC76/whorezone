@@ -39,8 +39,13 @@ function parseToken(req: Request): AuthUser | null {
   }
   const token = authHeader.slice('Bearer '.length);
   try {
-    const claims = jwt.verify(token, JWT_SECRET) as TokenClaims;
-    return { id: claims.sub, email: claims.email, role: claims.role };
+    const decoded: unknown = jwt.verify(token, JWT_SECRET);
+    if (!decoded || typeof decoded !== 'object') return null;
+    const claims = decoded as Partial<TokenClaims>;
+    const id = Number(claims.sub);
+    if (!Number.isFinite(id) || typeof claims.email !== 'string') return null;
+    if (claims.role !== 'admin' && claims.role !== 'user') return null;
+    return { id, email: claims.email, role: claims.role };
   } catch {
     return null;
   }

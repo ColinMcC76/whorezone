@@ -113,7 +113,7 @@ function persistWrites(req: Request, res: Response, next: NextFunction): void {
     next();
     return;
   }
-  const end = res.end.bind(res);
+  const end = res.end.bind(res) as (...parts: unknown[]) => Response;
   let ended = false;
   res.end = ((...args: unknown[]) => {
     if (ended) return res;
