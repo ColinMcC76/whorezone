@@ -1,11 +1,10 @@
 import crypto from 'node:crypto';
-import { Express, Router } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import { BlogPost, PostStatus, User } from './types';
 import { generateToken, requireAdmin, requireAuth, AuthRequest } from './auth';
 import {
   createUser,
-  ensureSchemaAndSeed,
   findPostById,
   findPublishedPostBySlug,
   findUserById,
@@ -435,22 +434,4 @@ export function createRouter(deps: RouteDeps): Router {
   });
 
   return router;
-}
-
-export function registerRoutes(app: Express): void {
-  ensureSchemaAndSeed();
-  const router = createRouter({
-    listPublishedPosts,
-    findPublishedPostBySlug,
-    findPostById,
-    createPost,
-    updatePost,
-    deletePost: removePost,
-    listAllPosts,
-    findUserByEmail,
-    createUser,
-    findUserById,
-    updateUserCredentials,
-  });
-  app.use('/api', router);
 }

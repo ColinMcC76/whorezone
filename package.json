@@ -2,9 +2,6 @@
   "name": "personal-hub",
   "private": true,
   "version": "0.0.0",
-  "engines": {
-    "node": "22.x"
-  },
   "description": "A creative personal website with blog CRUD and admin auth.",
   "scripts": {
     "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
