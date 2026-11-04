@@ -137,6 +137,26 @@ The server binds to `PORT` automatically (`PORT || API_PORT || 4000`).
 
 This repository also includes `render.yaml` with the same defaults.
 
+## Vercel (site and API)
+
+Vercel hosts the Vite frontend and the Express API together. `vercel.json` publishes `dist` and sends `/api/*` to the function in `api/index.ts`. Production builds call that function on the same host (`/api`), so `VITE_API_URL` is unset.
+
+The API uses Node’s built-in SQLite (`node:sqlite`, Node 22). On Vercel the file lives in `/tmp`, which is wiped on a cold start. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store to the project so `BLOB_READ_WRITE_TOKEN` is set. The API then saves `mcwhorezone/app.db` as a private blob and restores it on the next boot. Without that token, the welcome post and the seeded admin account come back on each cold start, and new posts do not stick.
+
+Set `JWT_SECRET` on the Vercel project before using login in production. OAuth still needs the Google and Discord variables from the section above. On Vercel, `FRONTEND_OAUTH_REDIRECT_URL` defaults to `https://www.mcwhorezone.com/#/auth/callback`.
+
+`mcwhorezone.com` can belong to only one Vercel project. Import this repo (framework Vite) and attach the domain there.
+
+1. Import `ColinMcC76/whorezone` into Vercel (framework Vite). Add a Blob store if posts should survive restarts, and set `JWT_SECRET`.
+2. In any other Vercel project, remove `mcwhorezone.com` and `www.mcwhorezone.com`.
+3. Add both hostnames to this project. Vercel will show the DNS targets.
+4. In Cloudflare DNS for `mcwhorezone.com`, point the records at those targets. The usual Cloudflare records are:
+   - `www` CNAME to `cname.vercel-dns.com` (or the project-specific `*.vercel-dns.com` host Vercel displays)
+   - apex (`@`) CNAME to the same target (Cloudflare flattens apex CNAMEs)
+   - Proxy status: DNS only (grey cloud) until Vercel marks the domain valid
+
+Redeploy the Vercel project after this lands so `/api/health` and `/api/posts` are served from the site instead of the old Render host.
+
 ## GitHub Pages Notes
 
 If you host this repository on GitHub Pages:

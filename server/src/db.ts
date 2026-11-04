@@ -1,18 +1,53 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { AuthProvider, BlogPost, PostStatus, User } from './types';
+import { downloadDatabase, uploadDatabase } from './blobStore';
 
-const dataDir = path.resolve(process.cwd(), 'server', 'data');
-fs.mkdirSync(dataDir, { recursive: true });
+const dataDir = process.env.VERCEL
+  ? path.join('/tmp', 'mcwhorezone')
+  : path.resolve(process.cwd(), 'server', 'data');
 const dbPath = path.join(dataDir, 'app.db');
 
-export const db = new Database(dbPath);
+let database: DatabaseSync | null = null;
+let preparing: Promise<void> | null = null;
+
+function getDb(): DatabaseSync {
+  if (!database) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    database = new DatabaseSync(dbPath);
+    database.exec('PRAGMA journal_mode = DELETE');
+  }
+  return database;
+}
+
+/** Open SQLite, restoring the Vercel Blob copy first when that store is configured. */
+export function prepareDatabase(): Promise<void> {
+  if (!preparing) {
+    preparing = (async () => {
+      const restored = await downloadDatabase(dbPath);
+      runMigrations();
+      seedDatabase();
+      if (restored === 'missing') {
+        await uploadDatabase(dbPath);
+      }
+    })().catch((error) => {
+      preparing = null;
+      throw error;
+    });
+  }
+  return preparing;
+}
+
+/** Copy the database file back to Vercel Blob after a write. */
+export function persistDatabase(): Promise<void> {
+  return uploadDatabase(dbPath);
+}
 
 export function runMigrations(): void {
-  db.exec(`
+  getDb().exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT NOT NULL UNIQUE,
@@ -46,19 +81,19 @@ export function runMigrations(): void {
 function migrateUsersV2(): void {
   const readNames = () =>
     new Set(
-      (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name),
+      (getDb().prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name),
     );
   let names = readNames();
   if (!names.has('authProvider')) {
-    db.exec(`
+    getDb().exec(`
       ALTER TABLE users ADD COLUMN authProvider TEXT NOT NULL DEFAULT 'local';
     `);
     names = readNames();
   }
   if (!names.has('authSubject')) {
-    db.exec(`ALTER TABLE users ADD COLUMN authSubject TEXT;`);
+    getDb().exec(`ALTER TABLE users ADD COLUMN authSubject TEXT;`);
   }
-  db.exec(`
+  getDb().exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth_subject
     ON users(authProvider, authSubject)
     WHERE authSubject IS NOT NULL;
@@ -66,11 +101,11 @@ function migrateUsersV2(): void {
 }
 
 export function seedDatabase(): void {
-  const userCount = db.prepare('SELECT COUNT(*) AS count FROM users').get() as { count: number };
+  const userCount = getDb().prepare('SELECT COUNT(*) AS count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     const now = new Date().toISOString();
     const passwordHash = bcrypt.hashSync('change-me-admin', 10);
-    db.prepare(
+    getDb().prepare(
       `
       INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
       VALUES (@email, @displayName, @passwordHash, @role, 'local', NULL, @createdAt, @updatedAt)
@@ -85,14 +120,14 @@ export function seedDatabase(): void {
     });
   }
 
-  const postCount = db.prepare('SELECT COUNT(*) AS count FROM posts').get() as { count: number };
+  const postCount = getDb().prepare('SELECT COUNT(*) AS count FROM posts').get() as { count: number };
   if (postCount.count === 0) {
-    const author = db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get('admin') as
+    const author = getDb().prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get('admin') as
       | { id: number }
       | undefined;
     if (!author) return;
     const now = new Date().toISOString();
-    db.prepare(
+    getDb().prepare(
       `
       INSERT INTO posts (slug, title, summary, content, coverImageUrl, status, publishedAt, createdAt, updatedAt, authorId)
       VALUES (@slug, @title, @summary, @content, @coverImageUrl, @status, @publishedAt, @createdAt, @updatedAt, @authorId)
@@ -145,7 +180,7 @@ function mapUserRow(row: any): User {
 
 export const postRepo = {
   listPublished(): BlogPost[] {
-    const rows = db
+    const rows = getDb()
       .prepare(
         `
         SELECT * FROM posts
@@ -157,7 +192,7 @@ export const postRepo = {
     return rows.map(mapPostRow);
   },
   listAll(): BlogPost[] {
-    const rows = db
+    const rows = getDb()
       .prepare(
         `
         SELECT * FROM posts
@@ -168,16 +203,16 @@ export const postRepo = {
     return rows.map(mapPostRow);
   },
   getBySlug(slug: string): BlogPost | null {
-    const row = db.prepare('SELECT * FROM posts WHERE slug = ? LIMIT 1').get(slug);
+    const row = getDb().prepare('SELECT * FROM posts WHERE slug = ? LIMIT 1').get(slug);
     return row ? mapPostRow(row) : null;
   },
   getById(id: number): BlogPost | null {
-    const row = db.prepare('SELECT * FROM posts WHERE id = ? LIMIT 1').get(id);
+    const row = getDb().prepare('SELECT * FROM posts WHERE id = ? LIMIT 1').get(id);
     return row ? mapPostRow(row) : null;
   },
   create(input: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): BlogPost {
     const now = new Date().toISOString();
-    const result = db
+    const result = getDb()
       .prepare(
         `
         INSERT INTO posts (slug, title, summary, content, coverImageUrl, status, publishedAt, createdAt, updatedAt, authorId)
@@ -204,7 +239,7 @@ export const postRepo = {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    db.prepare(
+    getDb().prepare(
       `
       UPDATE posts
       SET slug=@slug, title=@title, summary=@summary, content=@content,
@@ -225,31 +260,31 @@ export const postRepo = {
     return this.getById(id);
   },
   delete(id: number): boolean {
-    const result = db.prepare('DELETE FROM posts WHERE id = ?').run(id);
+    const result = getDb().prepare('DELETE FROM posts WHERE id = ?').run(id);
     return result.changes > 0;
   },
 };
 
 export const userRepo = {
   findById(id: number): User | null {
-    const row = db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(id);
+    const row = getDb().prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(id);
     if (!row) return null;
     return mapUserRow(row);
   },
   findByEmail(email: string): User | null {
-    const row = db.prepare('SELECT * FROM users WHERE email = ? LIMIT 1').get(email);
+    const row = getDb().prepare('SELECT * FROM users WHERE email = ? LIMIT 1').get(email);
     if (!row) return null;
     return mapUserRow(row);
   },
   findByProviderSubject(provider: AuthProvider, subject: string): User | null {
-    const row = db
+    const row = getDb()
       .prepare('SELECT * FROM users WHERE authProvider = ? AND authSubject = ? LIMIT 1')
       .get(provider, subject);
     if (!row) return null;
     return mapUserRow(row);
   },
   list(): User[] {
-    const rows = db.prepare('SELECT * FROM users ORDER BY datetime(createdAt) DESC').all();
+    const rows = getDb().prepare('SELECT * FROM users ORDER BY datetime(createdAt) DESC').all();
     return rows.map(mapUserRow);
   },
   async create(input: {
@@ -260,7 +295,7 @@ export const userRepo = {
   }): Promise<User> {
     const now = new Date().toISOString();
     const passwordHash = await hashPassword(input.password);
-    const result = db
+    const result = getDb()
       .prepare(
         `
         INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
@@ -276,14 +311,14 @@ export const userRepo = {
         updatedAt: now,
       });
     return mapUserRow(
-      db.prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)),
+      getDb().prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)),
     );
   },
   updateCredentials(input: { id: number; email: string; passwordHash?: string }): User | null {
     const existing = this.findById(input.id);
     if (!existing) return null;
     const now = new Date().toISOString();
-    db.prepare(
+    getDb().prepare(
       `
         UPDATE users
         SET email = @email,
@@ -333,7 +368,7 @@ export function createPost(input: {
   summary: string;
   content: string;
   coverImageUrl?: string | null;
-  status: BlogPostStatus;
+  status: PostStatus;
   publishedAt?: string | null;
   authorId: number;
 }): BlogPost {
@@ -357,7 +392,7 @@ export function updatePost(
     summary: string;
     content: string;
     coverImageUrl?: string | null;
-    status: BlogPostStatus;
+    status: PostStatus;
     publishedAt?: string | null;
   },
 ): BlogPost | null {
@@ -407,7 +442,7 @@ export async function createOAuthUser(input: {
   const now = new Date().toISOString();
   const randomSecret = crypto.randomBytes(32).toString('base64url');
   const passwordHash = await hashPassword(`oauth:${input.provider}:${randomSecret}`);
-  const result = db
+  const result = getDb()
     .prepare(
       `
       INSERT INTO users (email, displayName, passwordHash, role, authProvider, authSubject, createdAt, updatedAt)
@@ -424,7 +459,7 @@ export async function createOAuthUser(input: {
       createdAt: now,
       updatedAt: now,
     });
-  return mapUserRow(db.prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)));
+  return mapUserRow(getDb().prepare('SELECT * FROM users WHERE id = ?').get(Number(result.lastInsertRowid)));
 }
 
 export async function updateUserCredentials(input: {

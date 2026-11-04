@@ -104,16 +104,21 @@ const oauthConsumeSchema = z.object({
   ticket: z.string().min(10).max(500),
 });
 
+function frontendOAuthBase(): string {
+  const configured = process.env.FRONTEND_OAUTH_REDIRECT_URL?.trim();
+  if (configured) return configured;
+  if (process.env.VERCEL) return 'https://www.mcwhorezone.com/#/auth/callback';
+  return 'http://localhost:5173/#/auth/callback';
+}
+
 function buildOAuthRedirect(ticket: string): string {
-  const base =
-    process.env.FRONTEND_OAUTH_REDIRECT_URL?.trim() || 'http://localhost:5173/#/auth/callback';
+  const base = frontendOAuthBase();
   const joiner = base.includes('?') ? '&' : '?';
   return `${base}${joiner}ticket=${encodeURIComponent(ticket)}`;
 }
 
 function buildOAuthErrorRedirect(message: string): string {
-  const base =
-    process.env.FRONTEND_OAUTH_REDIRECT_URL?.trim() || 'http://localhost:5173/#/auth/callback';
+  const base = frontendOAuthBase();
   const joiner = base.includes('?') ? '&' : '?';
   return `${base}${joiner}oauth_error=${encodeURIComponent(message)}`;
 }
