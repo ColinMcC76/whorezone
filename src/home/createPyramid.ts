@@ -4,6 +4,8 @@ const COURSES = 8;
 const PITCH = 0.92;
 const BLOCK = 0.78;
 
+export type SiteTheme = 'light' | 'dark';
+
 export type PyramidStone = {
   mesh: THREE.Mesh;
   home: THREE.Vector3;
@@ -11,6 +13,7 @@ export type PyramidStone = {
   arc: number;
   spin: number;
   tilt: number;
+  tone: number;
   /** Scroll timeline writes this. 0 is seated, 1 is lifted off. */
   lift: { value: number };
   /** Click writes this and, while active, it wins over the scroll timeline. */
@@ -21,6 +24,7 @@ export type PyramidHandle = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   stones: PyramidStone[];
+  ground: THREE.MeshStandardMaterial;
   cameraState: { yaw: number; height: number; distance: number };
   dispose: () => void;
 };
@@ -50,17 +54,16 @@ export function createPyramid(): PyramidHandle {
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
   const cameraState = { yaw: 0.62, height: 4.4, distance: 15.5 };
 
-  scene.add(new THREE.AmbientLight(0xfff1dd, 0.38));
-  scene.add(new THREE.HemisphereLight(0xffe6c4, 0x2a2118, 0.5));
-  const key = new THREE.DirectionalLight(0xfff0d2, 2.15);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x222222, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 2);
   key.position.set(8, 14, 6);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xc9d7ff, 0.9);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.7);
   rim.position.set(-10, 6, -8);
   scene.add(rim);
 
   const geometry = new THREE.BoxGeometry(BLOCK, BLOCK * 0.62, BLOCK);
-  const palette = [0xc4a574, 0xb08968, 0xd4b896, 0xa67c52, 0x8d6b45, 0xcdb089];
   const materials: THREE.MeshStandardMaterial[] = [];
   const stones: PyramidStone[] = [];
 
@@ -89,10 +92,11 @@ export function createPyramid(): PyramidHandle {
   layout.sort((a, b) => b.y - a.y || a.z - b.z || a.x - b.x);
 
   layout.forEach((spot, index) => {
+    const tone = unit(index);
     const material = new THREE.MeshStandardMaterial({
-      color: palette[Math.floor(unit(index) * palette.length)],
+      color: 0x888888,
       roughness: 0.78 + unit(index + 2) * 0.18,
-      metalness: 0.02,
+      metalness: 0.04,
     });
     materials.push(material);
 
@@ -118,6 +122,7 @@ export function createPyramid(): PyramidHandle {
       arc: 0.85 + jitter * 0.7,
       spin: (jitter - 0.5) * 1.4,
       tilt: (unit(index + 11) - 0.5) * 0.5,
+      tone,
       lift: { value: 0 },
       manual: { value: 0, active: false },
     };
@@ -127,22 +132,38 @@ export function createPyramid(): PyramidHandle {
   });
 
   const groundGeometry = new THREE.CircleGeometry(18, 48);
-  const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1612, roughness: 1, metalness: 0 });
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.02;
-  scene.add(ground);
+  const ground = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1, metalness: 0 });
+  const groundMesh = new THREE.Mesh(groundGeometry, ground);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -0.02;
+  scene.add(groundMesh);
 
-  return {
+  const handle: PyramidHandle = {
     scene,
     camera,
     stones,
+    ground,
     cameraState,
     dispose() {
       geometry.dispose();
       groundGeometry.dispose();
-      groundMaterial.dispose();
+      ground.dispose();
       materials.forEach((material) => material.dispose());
     },
   };
+  paintPyramid(handle, 'dark');
+  return handle;
+}
+
+export function paintPyramid(pyramid: PyramidHandle, theme: SiteTheme) {
+  const dark = theme === 'dark';
+  const background = dark ? 0x0a0a0a : 0xf4f4f4;
+  pyramid.scene.background = new THREE.Color(background);
+  pyramid.scene.fog = new THREE.Fog(background, 16, 38);
+  pyramid.ground.color.set(dark ? 0x111111 : 0xe4e4e4);
+  for (const stone of pyramid.stones) {
+    const material = stone.mesh.material as THREE.MeshStandardMaterial;
+    const shade = dark ? 0.38 + stone.tone * 0.52 : 0.08 + stone.tone * 0.38;
+    material.color.setScalar(shade);
+  }
 }

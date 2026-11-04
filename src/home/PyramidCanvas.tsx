@@ -2,13 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
-import { applyStonePose, createPyramid, type PyramidStone } from './createPyramid';
+import { applyStonePose, createPyramid, paintPyramid, type PyramidHandle, type PyramidStone, type SiteTheme } from './createPyramid';
 
 gsap.registerPlugin(ScrollTrigger);
 
 type PyramidCanvasProps = {
-  pinRef: React.RefObject<HTMLElement | null>;
+  scrollRef: React.RefObject<HTMLElement | null>;
   reduceMotion: boolean;
+  theme: SiteTheme;
 };
 
 function displayedLift(stone: PyramidStone) {
@@ -28,13 +29,15 @@ function toggleStone(stone: PyramidStone) {
   });
 }
 
-export default function PyramidCanvas({ pinRef, reduceMotion }: PyramidCanvasProps) {
+export default function PyramidCanvas({ scrollRef, reduceMotion, theme }: PyramidCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const pyramidRef = useRef<PyramidHandle | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
-    const pin = pinRef.current;
-    if (!host || !pin) return;
+    const scroll = scrollRef.current;
+    if (!host || !scroll) return;
 
     const canvas = document.createElement('canvas');
     canvas.className = 'landing-canvas';
@@ -49,15 +52,18 @@ export default function PyramidCanvas({ pinRef, reduceMotion }: PyramidCanvasPro
     }
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-    renderer.setClearColor(0x100e0c, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    rendererRef.current = renderer;
 
     const pyramid = createPyramid();
+    pyramidRef.current = pyramid;
+    paintPyramid(pyramid, theme);
+    renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
     const { scene, camera, stones, cameraState } = pyramid;
 
     const resize = () => {
-      const width = host.clientWidth || pin.clientWidth || 1;
-      const height = host.clientHeight || pin.clientHeight || 1;
+      const width = host.clientWidth || scroll.clientWidth || 1;
+      const height = host.clientHeight || window.innerHeight || 1;
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -117,6 +123,9 @@ export default function PyramidCanvas({ pinRef, reduceMotion }: PyramidCanvasPro
     const observer = new ResizeObserver(resize);
     observer.observe(host);
 
+    const distance = stones.length * 42;
+    if (!reduceMotion) scroll.style.setProperty('--landing-distance', `${distance}px`);
+
     const context = reduceMotion
       ? undefined
       : gsap.context(() => {
@@ -143,15 +152,13 @@ export default function PyramidCanvas({ pinRef, reduceMotion }: PyramidCanvasPro
             0,
           );
           ScrollTrigger.create({
-            trigger: pin,
+            trigger: scroll,
             start: 'top top',
-            end: `+=${stones.length * 42}`,
-            pin: true,
+            end: 'bottom bottom',
             scrub: 0.65,
             animation: timeline,
-            anticipatePin: 1,
           });
-        }, pin);
+        }, scroll);
 
     return () => {
       window.cancelAnimationFrame(frame);
@@ -163,11 +170,23 @@ export default function PyramidCanvas({ pinRef, reduceMotion }: PyramidCanvasPro
         gsap.killTweensOf(stone.manual);
         gsap.killTweensOf(stone.lift);
       });
+      scroll.style.removeProperty('--landing-distance');
       pyramid.dispose();
       renderer.dispose();
+      pyramidRef.current = null;
+      rendererRef.current = null;
       canvas.remove();
+      window.scrollTo(0, 0);
     };
-  }, [pinRef, reduceMotion]);
+  }, [scrollRef, reduceMotion]);
+
+  useEffect(() => {
+    const pyramid = pyramidRef.current;
+    const renderer = rendererRef.current;
+    if (!pyramid || !renderer) return;
+    paintPyramid(pyramid, theme);
+    renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
+  }, [theme]);
 
   return <div ref={hostRef} className="landing-canvas-host" aria-hidden="true" />;
 }

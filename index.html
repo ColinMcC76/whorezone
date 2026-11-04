@@ -5,12 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MCWhoreZone</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('personal-site-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          var theme = stored === 'dark' || stored === 'light'
+            ? stored
+            : (prefersDark || !prefersLight ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <!--
-    The body carries the `dark` class by default to enable dark theme styles.
-    You can toggle additional classes here if you later implement light mode.
-  -->
-  <body class="dark">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

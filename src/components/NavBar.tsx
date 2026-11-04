@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { siteConfig } from '../config/siteConfig';
 import type { User } from '../lib/types';
+import ThemeSwitch from './ThemeSwitch';
 
 interface NavBarProps {
   user: User | null;
@@ -31,6 +32,7 @@ export default function NavBar({ user, onLogout }: NavBarProps) {
 
           {/* RIGHT */}
           <div className="actions navbar-right">
+            <ThemeSwitch />
             <a href={siteConfig.socials.github} target="_blank" rel="noopener noreferrer" className="cta-outline">
               GitHub
             </a>

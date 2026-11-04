@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ThemeSwitch from '../components/ThemeSwitch';
 import PyramidCanvas from '../home/PyramidCanvas';
 import { siteConfig } from '../config/siteConfig';
+import { useTheme } from '../theme/ThemeProvider';
 import '../home/landing.css';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -27,25 +29,26 @@ function useReducedMotion() {
 }
 
 export default function Home() {
-  const pinRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    document.body.classList.add('landing-open');
-    return () => document.body.classList.remove('landing-open');
-  }, []);
+  const { theme } = useTheme();
 
   return (
-    <section className="landing" ref={pinRef} aria-label="Landing">
-      <PyramidCanvas pinRef={pinRef} reduceMotion={reduceMotion} />
-      <p className="landing-wordmark">{siteConfig.name}</p>
-      <nav className="landing-nav" aria-label="Site">
-        {landingLinks.map((link) => (
-          <Link key={link.to} to={link.to}>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+    <section className="landing-scroll" ref={scrollRef} aria-label="Landing">
+      <div className="landing-stage">
+        <PyramidCanvas scrollRef={scrollRef} reduceMotion={reduceMotion} theme={theme} />
+        <p className="landing-wordmark">{siteConfig.name}</p>
+        <div className="landing-tools">
+          <ThemeSwitch />
+        </div>
+        <nav className="landing-nav" aria-label="Site">
+          {landingLinks.map((link) => (
+            <Link key={link.to} to={link.to}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </section>
   );
 }
