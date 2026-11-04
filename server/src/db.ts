@@ -1,36 +1,32 @@
-import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { AuthProvider, BlogPost, PostStatus, User } from './types';
 import { downloadDatabase, uploadDatabase } from './blobStore';
+import { getDb, openSqlDatabase, saveSqlDatabase } from './sqlDatabase';
 
-const dataDir = process.env.VERCEL
+const hosted = Boolean(
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION,
+);
+const dataDir = hosted
   ? path.join('/tmp', 'mcwhorezone')
   : path.resolve(process.cwd(), 'server', 'data');
 const dbPath = path.join(dataDir, 'app.db');
 
-let database: DatabaseSync | null = null;
 let preparing: Promise<void> | null = null;
-
-function getDb(): DatabaseSync {
-  if (!database) {
-    fs.mkdirSync(dataDir, { recursive: true });
-    database = new DatabaseSync(dbPath);
-    database.exec('PRAGMA journal_mode = DELETE');
-  }
-  return database;
-}
 
 /** Open SQLite, restoring the Vercel Blob copy first when that store is configured. */
 export function prepareDatabase(): Promise<void> {
   if (!preparing) {
     preparing = (async () => {
+      fs.mkdirSync(dataDir, { recursive: true });
       const restored = await downloadDatabase(dbPath);
+      await openSqlDatabase(dbPath);
       runMigrations();
       seedDatabase();
       if (restored === 'missing') {
+        saveSqlDatabase(dbPath);
         await uploadDatabase(dbPath);
       }
     })().catch((error) => {
@@ -43,6 +39,7 @@ export function prepareDatabase(): Promise<void> {
 
 /** Copy the database file back to Vercel Blob after a write. */
 export function persistDatabase(): Promise<void> {
+  saveSqlDatabase(dbPath);
   return uploadDatabase(dbPath);
 }
 
