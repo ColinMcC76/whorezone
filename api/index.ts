@@ -66,3 +66,10 @@ export default async function handler(
     return Response.json({ error: message }, { status: 500 });
   }
 }
+
+// Vercel skips its response helpers when the listener has a listen method
+// (the Express app shape). Those helpers replace res.json and can crash
+// the invocation before this function runs.
+(handler as typeof handler & { listen: () => void }).listen = function listen() {
+  return undefined;
+};

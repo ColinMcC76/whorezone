@@ -100,6 +100,12 @@ export function createApp() {
   app.use('/blog', createBlogAliasRouter());
   app.use('/api', createRouter(routeDeps));
   app.use('/', createRouter(routeDeps));
+  app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(error);
+    if (res.headersSent) return;
+    const message = error instanceof Error ? error.message : 'API failed';
+    res.status(500).json({ error: message });
+  });
 
   return app;
 }

@@ -141,7 +141,7 @@ This repository also includes `render.yaml` with the same defaults.
 
 Vercel hosts the Vite frontend and the Express API together. `vercel.json` publishes `dist` and sends `/api/*` to the function in `api/index.ts`. Production builds call that function on the same host (`/api`), so `VITE_API_URL` is unset.
 
-The API uses Node’s built-in SQLite (`node:sqlite`, available on the project’s Node 26 runtime). On Vercel the file lives in `/tmp`, which is wiped on a cold start. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store to the project so `BLOB_READ_WRITE_TOKEN` is set. The API then saves `mcwhorezone/app.db` as a private blob and restores it on the next boot. Without that token, the welcome post and the seeded admin account come back on each cold start, and new posts do not stick.
+The API uses sql.js (SQLite compiled to WebAssembly) so the function does not depend on a Node build of SQLite. On Vercel the file lives in `/tmp`, which is wiped on a cold start. Connect a [Vercel Blob](https://vercel.com/docs/vercel-blob) store to the project so `BLOB_READ_WRITE_TOKEN` is set. The API then saves `mcwhorezone/app.db` as a private blob and restores it on the next boot. Without that token, the welcome post and the seeded admin account come back on each cold start, and new posts do not stick.
 
 Set `JWT_SECRET` on the Vercel project before using login in production. OAuth still needs the Google and Discord variables from the section above. On Vercel, `FRONTEND_OAUTH_REDIRECT_URL` defaults to `https://www.mcwhorezone.com/#/auth/callback`.
 
