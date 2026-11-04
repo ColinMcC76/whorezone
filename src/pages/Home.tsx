@@ -1,49 +1,51 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Card from '../components/Card';
+import PyramidCanvas from '../home/PyramidCanvas';
 import { siteConfig } from '../config/siteConfig';
+import '../home/landing.css';
+
+const motionQuery = '(prefers-reduced-motion: reduce)';
+
+const landingLinks = [
+  { label: 'Blog', to: '/blog' },
+  { label: 'Projects', to: '/projects' },
+  { label: 'Resume', to: '/resume' },
+  { label: 'Contact', to: '/contact' },
+];
+
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(() => window.matchMedia(motionQuery).matches);
+
+  useEffect(() => {
+    const media = window.matchMedia(motionQuery);
+    const onChange = () => setReduce(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  return reduce;
+}
 
 export default function Home() {
-  const quickLinks = [
-    { title: 'Blog', to: '/blog', description: 'Read thoughts, experiments, and updates.' },
-    { title: 'Projects', to: '/projects', description: 'Explore things I have built and shipped.' },
-    { title: 'Resume', to: '/resume', description: 'View my experience and download my resume.' },
-    { title: 'Contact', to: '/contact', description: 'Reach out for collaboration or conversation.' },
-  ];
+  const pinRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    document.body.classList.add('landing-open');
+    return () => document.body.classList.remove('landing-open');
+  }, []);
 
   return (
-    <>
-      <section className="hero hero-personal">
-        <div className="container">
-          <p className="eyebrow">Personal hub</p>
-          <h1>{siteConfig.name}</h1>
-          <p>{siteConfig.intro}</p>
-          <div className="hero-buttons">
-            <Link className="cta" to="/projects">
-              View Projects
-            </Link>
-            <Link className="cta-outline" to="/blog">
-              Read Blog
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="container">
-          <h2 className="section-title">Explore the site</h2>
-          <div className="grid cards-grid">
-            {quickLinks.map((link) => (
-              <Card key={link.to} title={link.title}>
-                <p>{link.description}</p>
-                <Link to={link.to} className="inline-link">
-                  Open {link.title}
-                </Link>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
+    <section className="landing" ref={pinRef} aria-label="Landing">
+      <PyramidCanvas pinRef={pinRef} reduceMotion={reduceMotion} />
+      <p className="landing-wordmark">{siteConfig.name}</p>
+      <nav className="landing-nav" aria-label="Site">
+        {landingLinks.map((link) => (
+          <Link key={link.to} to={link.to}>
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+    </section>
   );
 }
