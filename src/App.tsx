@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Footer from './components/Footer';
 import NavBar from './components/NavBar';
@@ -40,6 +40,7 @@ function readStoredUser(): User | null {
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const isLanding = useLocation().pathname === '/';
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(tokenStorageKey));
   const [user, setUser] = useState<User | null>(() => readStoredUser());
 
@@ -99,8 +100,8 @@ function AppRoutes() {
   );
 
   return (
-    <div className="app-shell">
-      <NavBar user={user} onLogout={authHandlers.logout} />
+    <div className={isLanding ? 'app-shell app-shell-landing' : 'app-shell'}>
+      {isLanding ? null : <NavBar user={user} onLogout={authHandlers.logout} />}
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -155,7 +156,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <Footer />
+      {isLanding ? null : <Footer />}
     </div>
   );
 }
