@@ -78,47 +78,78 @@ function sendFallback(req, res) {
   return false;
 }
 
+function isPublicRead(req) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+  const path = requestPath(req.url);
+  return path === '/health' || path === '/posts' || path === '/blog/posts' || /^\/(?:blog\/)?posts\/[^/]+$/.test(path);
+}
+
 function toRequest(req) {
   const host = req.headers.host || 'localhost';
   const proto = req.headers['x-forwarded-proto'] || 'https';
   const url = new URL(req.url || '/', `${proto}://${host}`);
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (typeof value === 'string') headers.set(key, value);
+    else if (Array.isArray(value)) value.forEach((item) => headers.append(key, item));
+  }
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    return Promise.resolve(new Request(url, { method: req.method, headers }));
+  }
   const chunks = [];
   return new Promise((resolve, reject) => {
-    req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    req.on('end', () => {
+    const finish = () => {
       const body = Buffer.concat(chunks);
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (typeof value === 'string') headers.set(key, value);
-        else if (Array.isArray(value)) value.forEach((item) => headers.append(key, item));
-      }
-      resolve(
-        new Request(url, {
-          method: req.method,
-          headers,
-          body: body.length > 0 && req.method !== 'GET' && req.method !== 'HEAD' ? body : undefined,
-        }),
-      );
-    });
+      resolve(new Request(url, { method: req.method, headers, body: body.length > 0 ? body : undefined }));
+    };
+    if (req.readableEnded || req.complete) {
+      finish();
+      return;
+    }
+    req.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    req.on('end', finish);
     req.on('error', reject);
+    if (typeof req.resume === 'function') req.resume();
+  });
+}
+
+function loadHandleApi() {
+  const loaded = require('../server/handler.cjs');
+  const handleApi = loaded.handleApi || loaded.default?.handleApi;
+  if (typeof handleApi !== 'function') {
+    throw new Error('API bundle did not export handleApi');
+  }
+  return handleApi;
+}
+
+function writeResponse(res, response) {
+  res.statusCode = response.status;
+  response.headers.forEach((value, key) => {
+    res.setHeader(key, value);
+  });
+  return response.arrayBuffer().then((bytes) => {
+    res.end(Buffer.from(bytes));
   });
 }
 
 async function handler(req, res) {
+  const publicRead = isPublicRead(req);
+  let timedOut = false;
+  const timeout = publicRead
+    ? setTimeout(() => {
+        timedOut = true;
+        if (!res.headersSent) sendFallback(req, res);
+      }, 2000)
+    : null;
   try {
-    const loaded = require('../server/handler.cjs');
-    const handleApi = loaded.handleApi || loaded.default?.handleApi;
-    if (typeof handleApi !== 'function') {
-      throw new Error('API bundle did not export handleApi');
-    }
+    const handleApi = loadHandleApi();
     const request = await toRequest(req);
     const response = await handleApi(request);
-    res.statusCode = response.status;
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
-    res.end(Buffer.from(await response.arrayBuffer()));
+    if (timeout) clearTimeout(timeout);
+    if (timedOut || res.headersSent) return;
+    await writeResponse(res, response);
   } catch (error) {
+    if (timeout) clearTimeout(timeout);
     console.error(error);
     if (res.headersSent) return;
     if (sendFallback(req, res)) return;
@@ -127,9 +158,5 @@ async function handler(req, res) {
     sendJson(res, 500, { error: message, stack });
   }
 }
-
-handler.listen = function listen() {
-  return handler;
-};
 
 module.exports = handler;

@@ -14027,12 +14027,27 @@ async function restoreFromBlob() {
   }
   reindex();
 }
+function withTimeout(work, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(void 0), ms);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error48) => {
+        clearTimeout(timer);
+        reject(error48);
+      }
+    );
+  });
+}
 function readyStore() {
   if (!ready) {
     ready = (async () => {
       await seed();
       try {
-        await restoreFromBlob();
+        await withTimeout(restoreFromBlob(), 1200);
       } catch (error48) {
         console.error("Blog database restore skipped", error48);
       }
