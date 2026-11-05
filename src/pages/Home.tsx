@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ThemeSwitch from '../components/ThemeSwitch';
-import PyramidCanvas, { type PyramidCanvasHandle } from '../home/PyramidCanvas';
+import HoloSphereCanvas from '../home/HoloSphereCanvas';
 import { siteConfig } from '../config/siteConfig';
 import { useTheme } from '../theme/ThemeProvider';
 import '../home/landing.css';
@@ -29,23 +29,15 @@ function useReducedMotion() {
 }
 
 export default function Home() {
-  const pyramidRef = useRef<PyramidCanvasHandle>(null);
   const reduceMotion = useReducedMotion();
   const { theme } = useTheme();
 
   return (
     <section className="landing-stage" aria-label="Landing">
-      <PyramidCanvas ref={pyramidRef} reduceMotion={reduceMotion} theme={theme} />
+      <HoloSphereCanvas reduceMotion={reduceMotion} theme={theme} />
       <p className="landing-wordmark">{siteConfig.name}</p>
       <div className="landing-tools">
         <ThemeSwitch />
-        <button
-          type="button"
-          className="landing-restack"
-          onClick={() => pyramidRef.current?.restack()}
-        >
-          Restack
-        </button>
       </div>
       <nav className="landing-nav" aria-label="Site">
         {landingLinks.map((link) => (
