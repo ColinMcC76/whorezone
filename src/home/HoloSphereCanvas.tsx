@@ -25,8 +25,8 @@ type HoloSphereCanvasProps = {
 
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
-/** Gentle continuous spin around world Y when idle (rad/s) — full turn ~22s. */
-export const FREE_SPIN_YAW = 0.28;
+/** Gentle continuous spin around world Y when idle (rad/s) — full turn ~52s. */
+export const FREE_SPIN_YAW = 0.12;
 export const MAX_ANGULAR_SPEED = 9;
 export const YAW_SETTLE = 1.8;
 /** Ignore stale pointer samples so a pause before release doesn't kill the flick. */
