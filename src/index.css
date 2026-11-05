@@ -198,7 +198,27 @@ button {
 }
 
 .project-grid {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .project-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.chapter.chapter-wide .chapter-inner {
+  width: min(1120px, 92%);
+}
+
+.chapter.chapter-wide .chapter-body {
+  max-width: none;
 }
 
 .card {
