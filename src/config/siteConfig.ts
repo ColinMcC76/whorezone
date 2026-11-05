@@ -5,9 +5,8 @@ export const siteConfig = {
     'This is my corner of the internet for sharing projects, writing, and things I am exploring.',
   email: 'colinmccu@outlook.com',
   socials: {
-    github: 'https://github.com/example',
-    linkedin: 'https://linkedin.com/in/example',
-    instagram: 'https://instagram.com/example',
+    github: 'https://github.com/ColinMcC76',
+    linkedin: 'https://www.linkedin.com/in/colin-mcc/',
   },
   resumePdfUrl: '/resume.pdf',
   minecraftArchiveUrl: 'https://minecraft.example.com',

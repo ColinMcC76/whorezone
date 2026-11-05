@@ -8,7 +8,7 @@ export default function Contact() {
       <Chapter
         eyebrow="Reach out"
         title="Contact"
-        lead="Collaborations, project ideas, or a simple hello."
+        lead="Collaborations, IT projects, or a simple hello."
       >
         <div className="chapter-actions">
           <a className="cta" href={`mailto:${siteConfig.email}`}>
