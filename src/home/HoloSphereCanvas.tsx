@@ -24,6 +24,43 @@ type HoloSphereCanvasProps = {
 };
 
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
+/** Gentle continuous yaw spin when idle (rad/s) — full turn ~22s. */
+export const FREE_SPIN_YAW = 0.28;
+export const MAX_YAW_VELOCITY = 8.5;
+export const MAX_PITCH_VELOCITY = 3.5;
+export const YAW_SETTLE = 1.8;
+const PITCH_DAMP = 3.4;
+/** Ignore stale pointer samples so a paused drag still flings from the last real motion. */
+export const FLICK_SAMPLE_MAX_DT = 0.085;
+export const FLICK_RELEASE_WINDOW_MS = 120;
+
+/** Resolve yaw/pitch velocity when the pointer is released after an orbit drag. */
+export function releaseOrbitVelocity(args: {
+  reduceMotion: boolean;
+  moved: boolean;
+  flickYaw: number;
+  flickPitch: number;
+  flickAgeMs: number;
+  freeSpinYaw?: number;
+  releaseWindowMs?: number;
+}) {
+  const freeSpin = args.freeSpinYaw ?? FREE_SPIN_YAW;
+  const windowMs = args.releaseWindowMs ?? FLICK_RELEASE_WINDOW_MS;
+  if (args.reduceMotion) return { yawVelocity: 0, pitchVelocity: 0 };
+  if (!args.moved) return { yawVelocity: freeSpin, pitchVelocity: 0 };
+  if (args.flickAgeMs <= windowMs && Math.abs(args.flickYaw) > freeSpin * 0.35) {
+    return {
+      yawVelocity: THREE.MathUtils.clamp(args.flickYaw, -MAX_YAW_VELOCITY, MAX_YAW_VELOCITY),
+      pitchVelocity: THREE.MathUtils.clamp(args.flickPitch, -MAX_PITCH_VELOCITY, MAX_PITCH_VELOCITY),
+    };
+  }
+  return { yawVelocity: freeSpin, pitchVelocity: 0 };
+}
+
+/** Drift yaw velocity toward idle free spin. */
+export function settleYawVelocity(yawVelocity: number, delta: number, freeSpinYaw = FREE_SPIN_YAW) {
+  return yawVelocity + (freeSpinYaw - yawVelocity) * Math.min(1, YAW_SETTLE * delta);
+}
 
 function bloomStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
   if (reduceMotion) return theme === 'dark' ? 0.096 : 0.036;
@@ -122,6 +159,12 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     let moved = false;
     let lastX = 0;
     let lastY = 0;
+    let lastSampleAt = performance.now();
+    let yawVelocity = reduceMotionRef.current ? 0 : FREE_SPIN_YAW;
+    let pitchVelocity = 0;
+    let flickYaw = 0;
+    let flickPitch = 0;
+    let lastFlickAt = 0;
     let clock = 0;
 
     const setPointer = (event: PointerEvent) => {
@@ -146,6 +189,10 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       moved = false;
       lastX = event.clientX;
       lastY = event.clientY;
+      lastSampleAt = performance.now();
+      flickYaw = 0;
+      flickPitch = 0;
+      lastFlickAt = 0;
       canvas.setPointerCapture(event.pointerId);
       canvas.style.cursor = 'grabbing';
     };
@@ -160,12 +207,36 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         if (!moved && Math.abs(dx) + Math.abs(dy) > 3) {
           moved = true;
           orbiting = true;
+          // Grabbing the sphere pauses idle spin; flick velocity is sampled while dragging.
+          yawVelocity = 0;
+          pitchVelocity = 0;
           setHover(holo, null);
         }
         if (orbiting) {
+          const now = performance.now();
+          const dt = Math.max(1 / 120, (now - lastSampleAt) / 1000);
+          lastSampleAt = now;
+          const yawDelta = -dx * 0.01;
+          const pitchDelta = dy * 0.006;
           // Drag anywhere — including on the sphere — orbits the view.
-          cameraState.yaw -= dx * 0.01;
-          cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + dy * 0.006, -0.85, 1.1);
+          cameraState.yaw += yawDelta;
+          cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + pitchDelta, -0.85, 1.1);
+          // Only trust fresh, meaningful samples so a pause before release doesn't kill the flick.
+          if (Math.hypot(dx, dy) >= 1 && dt <= FLICK_SAMPLE_MAX_DT) {
+            flickYaw = THREE.MathUtils.clamp(
+              THREE.MathUtils.lerp(flickYaw, yawDelta / dt, 0.7),
+              -MAX_YAW_VELOCITY,
+              MAX_YAW_VELOCITY,
+            );
+            flickPitch = THREE.MathUtils.clamp(
+              THREE.MathUtils.lerp(flickPitch, pitchDelta / dt, 0.7),
+              -MAX_PITCH_VELOCITY,
+              MAX_PITCH_VELOCITY,
+            );
+            lastFlickAt = now;
+            yawVelocity = flickYaw;
+            pitchVelocity = flickPitch;
+          }
           placeCamera(camera, cameraState);
         }
         return;
@@ -203,6 +274,18 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         }
       }
 
+      if (pointerDown) {
+        const released = releaseOrbitVelocity({
+          reduceMotion: reduceMotionRef.current,
+          moved,
+          flickYaw,
+          flickPitch,
+          flickAgeMs: performance.now() - lastFlickAt,
+        });
+        yawVelocity = released.yawVelocity;
+        pitchVelocity = released.pitchVelocity;
+      }
+
       orbiting = false;
       pointerDown = false;
       const hit = hitBall(event);
@@ -237,6 +320,23 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
       clock += delta;
+
+      if (!pointerDown) {
+        if (reduceMotionRef.current) {
+          yawVelocity = 0;
+          pitchVelocity = 0;
+        } else {
+          // Drift flick momentum back toward the idle free spin.
+          yawVelocity = settleYawVelocity(yawVelocity, delta);
+          pitchVelocity *= Math.exp(-PITCH_DAMP * delta);
+          if (Math.abs(pitchVelocity) < 0.001) pitchVelocity = 0;
+          cameraState.yaw += yawVelocity * delta;
+          const nextPitch = cameraState.pitch + pitchVelocity * delta;
+          if (nextPitch <= -0.85 || nextPitch >= 1.1) pitchVelocity = 0;
+          cameraState.pitch = THREE.MathUtils.clamp(nextPitch, -0.85, 1.1);
+        }
+      }
+
       stepSwarm(holo, clock, delta, reduceMotionRef.current);
       placeCamera(camera, cameraState);
       composer.render();
