@@ -8,6 +8,7 @@ export const siteConfig = {
     github: 'https://github.com/ColinMcC76',
     linkedin: 'https://www.linkedin.com/in/colin-mcc/',
   },
+  githubUsername: 'ColinMcC76',
   resumePdfUrl: '/resume.pdf',
   minecraftArchiveUrl: 'https://minecraft.example.com',
   resume: {
@@ -104,26 +105,7 @@ export const siteConfig = {
       'Critical Thinking',
     ],
   },
-  projects: [
-    {
-      title: 'Personal Analytics Dashboard',
-      summary: 'A private dashboard that tracks habits and writing progress.',
-      stack: ['React', 'TypeScript', 'SQLite'],
-      href: '#',
-    },
-    {
-      title: 'Community Event Planner',
-      summary: 'A lightweight event planner for friends and local community meetups.',
-      stack: ['Node.js', 'Express', 'PostgreSQL'],
-      href: '#',
-    },
-    {
-      title: 'CLI Notes Sync Tool',
-      summary: 'A terminal-first sync utility for markdown notes and snippets.',
-      stack: ['TypeScript', 'Node.js'],
-      href: '#',
-    },
-  ],
 };
+
 
 export type SiteConfig = typeof siteConfig;
