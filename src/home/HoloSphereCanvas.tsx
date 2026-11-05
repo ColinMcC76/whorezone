@@ -22,8 +22,8 @@ type HoloSphereCanvasProps = {
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 
 function bloomStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
-  if (reduceMotion) return theme === 'dark' ? 0.16 : 0.06;
-  return theme === 'dark' ? 0.48 : 0.2;
+  if (reduceMotion) return theme === 'dark' ? 0.096 : 0.036;
+  return theme === 'dark' ? 0.288 : 0.12;
 }
 
 function placeCamera(camera: THREE.PerspectiveCamera, state: HoloSphereHandle['cameraState']) {
@@ -171,7 +171,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       if (pointerDown && !moved && !reduceMotionRef.current) {
         const hit = hitBall(event);
         if (hit) {
-          pushPoke(holo, hit.point, clock, 1);
+          pushPoke(holo, hit.point, clock);
         }
       }
 
