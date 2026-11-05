@@ -33,7 +33,7 @@ export type HoloSphereHandle = {
   scales: Float32Array;
   pokes: PokeWave[];
   hover: HoverField;
-  cameraState: { yaw: number; pitch: number; distance: number };
+  cameraState: { distance: number; orientation: THREE.Quaternion };
   dispose: () => void;
 };
 
@@ -89,7 +89,16 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   scene.fog = new THREE.Fog(0x0a0a0a, 14, 36);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
-  const cameraState = { yaw: 0.55, pitch: 0.28, distance: 8.4 };
+  // Seed a slightly elevated view; trackball orientation replaces yaw/pitch clamps.
+  const seedDir = new THREE.Vector3(
+    Math.sin(0.55) * Math.cos(0.28),
+    Math.sin(0.28),
+    Math.cos(0.55) * Math.cos(0.28),
+  ).normalize();
+  const cameraState = {
+    distance: 8.4,
+    orientation: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), seedDir),
+  };
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   const key = new THREE.DirectionalLight(0xffffff, 1.15);

@@ -62,4 +62,22 @@ describe('createHoloSphere', () => {
     expect(phone).toBeGreaterThan(desktop);
     expect(phone).toBeGreaterThan(SPHERE_RADIUS * 2);
   });
+
+  it('allows trackball orientation to tumble past the poles', () => {
+    const holo = createHoloSphere(24);
+    const start = new THREE.Vector3(0, 0, holo.cameraState.distance).applyQuaternion(
+      holo.cameraState.orientation,
+    );
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(holo.cameraState.orientation).normalize();
+    // Half-turn around local right — formerly blocked by pitch clamps near the poles.
+    holo.cameraState.orientation.premultiply(
+      new THREE.Quaternion().setFromAxisAngle(right, Math.PI),
+    );
+    const end = new THREE.Vector3(0, 0, holo.cameraState.distance).applyQuaternion(
+      holo.cameraState.orientation,
+    );
+    expect(end.length()).toBeCloseTo(holo.cameraState.distance, 5);
+    expect(end.distanceTo(start)).toBeGreaterThan(holo.cameraState.distance);
+    holo.dispose();
+  });
 });
