@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import Chapter from '../components/Chapter';
+import PageShell, { type ChapterIndexItem } from '../components/PageShell';
 import { fetchPublishedPost } from '../lib/api';
 import { BlogPost } from '../lib/types';
+
+const detailIndex: ChapterIndexItem[] = [
+  { id: 'post-title', label: 'Title' },
+  { id: 'post-body', label: 'Reading' },
+];
 
 export default function BlogDetail() {
   const { slug = '' } = useParams();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [error, setError] = useState('');
+  const index = useMemo(() => detailIndex, []);
 
   useEffect(() => {
     fetchPublishedPost(slug)
@@ -21,31 +29,42 @@ export default function BlogDetail() {
 
   if (error) {
     return (
-      <div className="container page-section">
-        <p className="form-error">{error}</p>
-        <Link to="/blog">Back to blog</Link>
-      </div>
+      <PageShell label="Blog">
+        <Chapter title="Unavailable" lead={error}>
+          <div className="chapter-actions">
+            <Link className="cta-outline" to="/blog">
+              Back to blog
+            </Link>
+          </div>
+        </Chapter>
+      </PageShell>
     );
   }
 
   if (!post) {
     return (
-      <div className="container page-section">
-        <p>Loading post...</p>
-      </div>
+      <PageShell label="Blog">
+        <Chapter title="Loading" lead="Fetching the post." />
+      </PageShell>
     );
   }
 
   return (
-    <article className="container page-section">
-      <Link to="/blog">← Back to blog</Link>
-      <h1 className="section-title" style={{ textAlign: 'left', marginTop: '1rem' }}>{post.title}</h1>
-      <p style={{ color: 'var(--color-muted)' }}>{post.summary}</p>
-      <div className="prose" style={{ marginTop: '1.5rem' }}>
-        {post.content.split('\n').map((line, idx) => (
-          <p key={`${post.id}-${idx}`}>{line}</p>
-        ))}
-      </div>
-    </article>
+    <PageShell label="Blog" index={index}>
+      <Chapter id="post-title" eyebrow="Post" title={post.title} lead={post.summary}>
+        <div className="chapter-actions">
+          <Link className="cta-outline" to="/blog">
+            Back to blog
+          </Link>
+        </div>
+      </Chapter>
+      <Chapter id="post-body" className="chapter-compact">
+        <div className="reading-measure prose">
+          {post.content.split('\n').map((line, idx) => (
+            <p key={`${post.id}-${idx}`}>{line}</p>
+          ))}
+        </div>
+      </Chapter>
+    </PageShell>
   );
 }

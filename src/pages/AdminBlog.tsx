@@ -1,5 +1,7 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Chapter from '../components/Chapter';
+import PageShell from '../components/PageShell';
 import { blogApi } from '../lib/api';
 import { AdminPostInput, BlogPost } from '../lib/types';
 
@@ -119,107 +121,112 @@ export default function AdminBlog({ token, onAuthError }: AdminBlogProps) {
   };
 
   return (
-    <div className="container page-shell">
-      <h1 className="section-title">Admin Blog Dashboard</h1>
-      <p className="page-copy">
-        Create, edit, publish, and curate your blog posts.{' '}
-        <Link to="/account">Account settings</Link>
-      </p>
+    <PageShell label="Admin">
+      <Chapter
+        className="chapter-stage"
+        eyebrow="Dashboard"
+        title="Admin Blog"
+        lead="Create, edit, publish, and curate your blog posts."
+      >
+        <p className="page-copy">
+          <Link to="/account">Account settings</Link>
+        </p>
 
-      <form onSubmit={onSubmit} className="admin-form">
-        <h2>{editingId ? 'Edit Post' : 'Create Post'}</h2>
-        <label>
-          Title
-          <input
-            value={form.title}
-            onChange={(event) => setForm({ ...form, title: event.target.value })}
-            required
-          />
-        </label>
-        <label>
-          Summary
-          <textarea
-            value={form.summary}
-            onChange={(event) => setForm({ ...form, summary: event.target.value })}
-            rows={3}
-            required
-          />
-        </label>
-        <label>
-          Cover image URL (optional)
-          <input
-            value={form.coverImageUrl}
-            onChange={(event) => setForm({ ...form, coverImageUrl: event.target.value })}
-          />
-        </label>
-        <label>
-          Content
-          <textarea
-            value={form.content}
-            onChange={(event) => setForm({ ...form, content: event.target.value })}
-            rows={9}
-            required
-          />
-        </label>
-        <label>
-          Status
-          <select
-            value={form.status}
-            onChange={(event) =>
-              setForm({ ...form, status: event.target.value as AdminPostInput['status'] })
-            }
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-        </label>
-        <div className="admin-form-actions">
-          <button className="cta" type="submit">
-            {editingId ? 'Save Changes' : 'Create Post'}
-          </button>
-          {editingId && (
-            <button className="cta-outline" type="button" onClick={resetForm}>
-              Cancel Edit
+        <form onSubmit={onSubmit} className="admin-form">
+          <h2>{editingId ? 'Edit Post' : 'Create Post'}</h2>
+          <label>
+            Title
+            <input
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Summary
+            <textarea
+              value={form.summary}
+              onChange={(event) => setForm({ ...form, summary: event.target.value })}
+              rows={3}
+              required
+            />
+          </label>
+          <label>
+            Cover image URL (optional)
+            <input
+              value={form.coverImageUrl}
+              onChange={(event) => setForm({ ...form, coverImageUrl: event.target.value })}
+            />
+          </label>
+          <label>
+            Content
+            <textarea
+              value={form.content}
+              onChange={(event) => setForm({ ...form, content: event.target.value })}
+              rows={9}
+              required
+            />
+          </label>
+          <label>
+            Status
+            <select
+              value={form.status}
+              onChange={(event) =>
+                setForm({ ...form, status: event.target.value as AdminPostInput['status'] })
+              }
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </label>
+          <div className="admin-form-actions">
+            <button className="cta" type="submit">
+              {editingId ? 'Save Changes' : 'Create Post'}
             </button>
-          )}
-        </div>
-      </form>
+            {editingId && (
+              <button className="cta-outline" type="button" onClick={resetForm}>
+                Cancel Edit
+              </button>
+            )}
+          </div>
+        </form>
 
-      {message && <p className="success-message">{message}</p>}
-      {error && <p className="error-message">{error}</p>}
+        {message && <p className="success-message">{message}</p>}
+        {error && <p className="error-message">{error}</p>}
 
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Published</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {posts.map((post) => (
-              <tr key={post.id}>
-                <td>{post.title}</td>
-                <td>{post.status}</td>
-                <td>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '-'}</td>
-                <td className="table-actions">
-                  <button className="cta-outline" onClick={() => onEdit(post)} type="button">
-                    Edit
-                  </button>
-                  <button className="cta-outline" onClick={() => onPublishToggle(post)} type="button">
-                    {post.status === 'published' ? 'Unpublish' : 'Publish'}
-                  </button>
-                  <button className="cta-outline danger" onClick={() => onDelete(post.id)} type="button">
-                    Delete
-                  </button>
-                </td>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Published</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {posts.map((post) => (
+                <tr key={post.id}>
+                  <td>{post.title}</td>
+                  <td>{post.status}</td>
+                  <td>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '-'}</td>
+                  <td className="table-actions">
+                    <button className="cta-outline" onClick={() => onEdit(post)} type="button">
+                      Edit
+                    </button>
+                    <button className="cta-outline" onClick={() => onPublishToggle(post)} type="button">
+                      {post.status === 'published' ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button className="cta-outline danger" onClick={() => onDelete(post.id)} type="button">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Chapter>
+    </PageShell>
   );
 }
