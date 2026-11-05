@@ -1,31 +1,30 @@
 import * as THREE from 'three';
 
-const COURSES = 8;
-const PITCH = 0.92;
-const BLOCK = 0.78;
+export const COURSES = 5;
+export const PITCH = 0.92;
+export const BLOCK_SIZE = { x: 0.78, y: 0.5, z: 0.78 };
+export const SNAP_RADIUS = 0.72;
+
+const LEGO_COLORS = [0xc91a09, 0xf5cd2f, 0x0055bf, 0x237841, 0xfe8a18, 0xf2f3f2];
 
 export type SiteTheme = 'light' | 'dark';
 
 export type PyramidStone = {
+  id: number;
   mesh: THREE.Mesh;
   home: THREE.Vector3;
-  out: THREE.Vector3;
-  arc: number;
-  spin: number;
-  tilt: number;
-  tone: number;
-  /** Scroll timeline writes this. 0 is seated, 1 is lifted off. */
-  lift: { value: number };
-  /** Click writes this and, while active, it wins over the scroll timeline. */
-  manual: { value: number; active: boolean };
+  color: number;
+  /** Seat currently occupied by this brick, or null when free on the floor. */
+  seatId: number | null;
 };
 
 export type PyramidHandle = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   stones: PyramidStone[];
+  seats: THREE.Vector3[];
   ground: THREE.MeshStandardMaterial;
-  cameraState: { yaw: number; height: number; distance: number };
+  cameraState: { yaw: number; pitch: number; distance: number };
   dispose: () => void;
 };
 
@@ -34,104 +33,71 @@ function unit(index: number) {
   return value - Math.floor(value);
 }
 
-export function applyStonePose(stone: PyramidStone) {
-  const raw = stone.manual.active ? stone.manual.value : stone.lift.value;
-  const t = THREE.MathUtils.clamp(raw, 0, 1);
-  const arc = Math.sin(t * Math.PI) * stone.arc;
-  stone.mesh.position.set(
-    THREE.MathUtils.lerp(stone.home.x, stone.out.x, t),
-    THREE.MathUtils.lerp(stone.home.y, stone.out.y, t) + arc,
-    THREE.MathUtils.lerp(stone.home.z, stone.out.z, t),
-  );
-  stone.mesh.rotation.set(stone.tilt * t, stone.spin * t, stone.tilt * 0.35 * t);
-}
-
 export function createPyramid(): PyramidHandle {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x100e0c);
-  scene.fog = new THREE.Fog(0x100e0c, 16, 38);
+  scene.background = new THREE.Color(0x0a0a0a);
+  scene.fog = new THREE.Fog(0x0a0a0a, 16, 38);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
-  const cameraState = { yaw: 0.62, height: 4.4, distance: 15.5 };
+  const cameraState = { yaw: 0.62, pitch: 0.42, distance: 12.5 };
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x222222, 0.55));
-  const key = new THREE.DirectionalLight(0xffffff, 2);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.7);
   key.position.set(8, 14, 6);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffffff, 0.7);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.55);
   rim.position.set(-10, 6, -8);
   scene.add(rim);
 
-  const geometry = new THREE.BoxGeometry(BLOCK, BLOCK * 0.62, BLOCK);
+  const geometry = new THREE.BoxGeometry(BLOCK_SIZE.x, BLOCK_SIZE.y, BLOCK_SIZE.z);
   const materials: THREE.MeshStandardMaterial[] = [];
   const stones: PyramidStone[] = [];
-
-  type Spot = { x: number; y: number; z: number; course: number };
-  const layout: Spot[] = [];
-  const blockHeight = BLOCK * 0.62;
+  const seats: THREE.Vector3[] = [];
 
   for (let course = 0; course < COURSES; course += 1) {
     const side = course + 1;
-    const y = (COURSES - 1 - course) * (blockHeight + 0.045) + blockHeight / 2;
-    const filled = side <= 3;
+    const y = (COURSES - 1 - course) * (BLOCK_SIZE.y + 0.02) + BLOCK_SIZE.y / 2;
     for (let ix = 0; ix < side; ix += 1) {
       for (let iz = 0; iz < side; iz += 1) {
-        const onRim = ix === 0 || iz === 0 || ix === side - 1 || iz === side - 1;
-        if (!filled && !onRim) continue;
-        layout.push({
-          x: (ix - (side - 1) / 2) * PITCH,
-          y,
-          z: (iz - (side - 1) / 2) * PITCH,
-          course,
-        });
+        seats.push(
+          new THREE.Vector3(
+            (ix - (side - 1) / 2) * PITCH,
+            y,
+            (iz - (side - 1) / 2) * PITCH,
+          ),
+        );
       }
     }
   }
 
-  layout.sort((a, b) => b.y - a.y || a.z - b.z || a.x - b.x);
-
-  layout.forEach((spot, index) => {
-    const tone = unit(index);
+  seats.forEach((home, index) => {
+    const color = LEGO_COLORS[Math.floor(unit(index) * LEGO_COLORS.length)];
     const material = new THREE.MeshStandardMaterial({
-      color: 0x888888,
-      roughness: 0.78 + unit(index + 2) * 0.18,
-      metalness: 0.04,
+      color,
+      roughness: 0.45,
+      metalness: 0.05,
     });
     materials.push(material);
 
     const mesh = new THREE.Mesh(geometry, material);
-    const home = new THREE.Vector3(spot.x, spot.y, spot.z);
     mesh.position.copy(home);
-
-    const length = Math.hypot(spot.x, spot.z);
-    const dirX = length < 0.001 ? 1 : spot.x / length;
-    const dirZ = length < 0.001 ? 0 : spot.z / length;
-    const reach = 2.6 + spot.course * 0.42;
-    const jitter = unit(index + 5);
-    const out = new THREE.Vector3(
-      spot.x + dirX * reach,
-      spot.y + 0.35 + jitter * 0.55,
-      spot.z + dirZ * reach,
-    );
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
 
     const stone: PyramidStone = {
+      id: index,
       mesh,
-      home,
-      out,
-      arc: 0.85 + jitter * 0.7,
-      spin: (jitter - 0.5) * 1.4,
-      tilt: (unit(index + 11) - 0.5) * 0.5,
-      tone,
-      lift: { value: 0 },
-      manual: { value: 0, active: false },
+      home: home.clone(),
+      color,
+      seatId: index,
     };
-    mesh.userData.stone = stone;
+    mesh.userData.stoneId = index;
     scene.add(mesh);
     stones.push(stone);
   });
 
-  const groundGeometry = new THREE.CircleGeometry(18, 48);
+  const groundGeometry = new THREE.CircleGeometry(16, 48);
   const ground = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1, metalness: 0 });
   const groundMesh = new THREE.Mesh(groundGeometry, ground);
   groundMesh.rotation.x = -Math.PI / 2;
@@ -142,6 +108,7 @@ export function createPyramid(): PyramidHandle {
     scene,
     camera,
     stones,
+    seats,
     ground,
     cameraState,
     dispose() {
@@ -163,7 +130,29 @@ export function paintPyramid(pyramid: PyramidHandle, theme: SiteTheme) {
   pyramid.ground.color.set(dark ? 0x111111 : 0xe4e4e4);
   for (const stone of pyramid.stones) {
     const material = stone.mesh.material as THREE.MeshStandardMaterial;
-    const shade = dark ? 0.38 + stone.tone * 0.52 : 0.08 + stone.tone * 0.38;
-    material.color.setScalar(shade);
+    material.color.setHex(stone.color);
   }
+}
+
+export function findNearestEmptySeat(
+  pyramid: PyramidHandle,
+  point: THREE.Vector3,
+  radius = SNAP_RADIUS,
+): number | null {
+  let bestId: number | null = null;
+  let bestDist = radius;
+  const occupied = new Set(
+    pyramid.stones.map((stone) => stone.seatId).filter((id): id is number => id !== null),
+  );
+
+  pyramid.seats.forEach((seat, id) => {
+    if (occupied.has(id)) return;
+    const dist = seat.distanceTo(point);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestId = id;
+    }
+  });
+
+  return bestId;
 }
