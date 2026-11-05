@@ -6,7 +6,7 @@ export const SPHERE_RADIUS = 2.35;
 export const DESKTOP_SWARM_COUNT = 5500;
 export const MOBILE_SWARM_COUNT = 1800;
 export const MAX_POKES = 6;
-const ORB_RADIUS = 0.038;
+const ORB_RADIUS = 0.03;
 
 export type PokeWave = {
   dir: THREE.Vector3;
@@ -53,8 +53,8 @@ varying vec3 vNormal;
 varying vec3 vWorldPos;
 void main() {
   vec3 viewDir = normalize(cameraPosition - vWorldPos);
-  float fresnel = pow(1.0 - max(dot(viewDir, normalize(vNormal)), 0.0), 2.8);
-  float body = fresnel * 0.55 + 0.04;
+  float fresnel = pow(1.0 - max(dot(viewDir, normalize(vNormal)), 0.0), 3.2);
+  float body = fresnel * 0.72 + 0.01;
   gl_FragColor = vec4(uColor, body * uOpacity);
 }
 `;
@@ -109,10 +109,10 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   for (let i = 0; i < count; i += 1) {
     const u = unit(i);
     const v = unit(i + 3);
-    const surfaceBias = Math.pow(unit(i + 7), 0.32);
+    const surfaceBias = Math.pow(unit(i + 7), 0.2);
     const theta = u * Math.PI * 2;
     const phi = Math.acos(2 * v - 1);
-    const r = SPHERE_RADIUS * (0.4 + surfaceBias * 0.58);
+    const r = SPHERE_RADIUS * (0.55 + surfaceBias * 0.44);
     const ix = i * 3;
     homes[ix] = r * Math.sin(phi) * Math.cos(theta);
     homes[ix + 1] = r * Math.cos(phi);
@@ -128,11 +128,11 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   const orbMaterial = new THREE.MeshStandardMaterial({
     color: 0xd8d8d8,
     emissive: 0xffffff,
-    emissiveIntensity: 2.6,
-    roughness: 0.22,
+    emissiveIntensity: 1.15,
+    roughness: 0.32,
     metalness: 0,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.78,
     depthWrite: false,
   });
 
@@ -229,20 +229,20 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
 
   const material = holo.swarm.material as THREE.MeshStandardMaterial;
   if (dark) {
-    material.color.setHex(0xd8d8d8);
+    material.color.setHex(0xcfcfcf);
     material.emissive.setHex(0xffffff);
-    material.emissiveIntensity = 2.8;
-    material.opacity = 0.9;
+    material.emissiveIntensity = 1.2;
+    material.opacity = 0.78;
   } else {
     material.color.setHex(0x1f1f1f);
     material.emissive.setHex(0x111111);
-    material.emissiveIntensity = 0.85;
-    material.opacity = 0.58;
+    material.emissiveIntensity = 0.4;
+    material.opacity = 0.5;
   }
   material.needsUpdate = true;
 
   holo.hazeMaterial.uniforms.uColor.value.setHex(dark ? 0xffffff : 0x222222);
-  holo.hazeMaterial.uniforms.uOpacity.value = dark ? 0.62 : 0.28;
+  holo.hazeMaterial.uniforms.uOpacity.value = dark ? 0.34 : 0.14;
   holo.hazeMaterial.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
   holo.hazeMaterial.needsUpdate = true;
 }

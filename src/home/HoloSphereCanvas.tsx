@@ -22,8 +22,8 @@ type HoloSphereCanvasProps = {
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 
 function bloomStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
-  if (reduceMotion) return theme === 'dark' ? 0.35 : 0.12;
-  return theme === 'dark' ? 1.35 : 0.45;
+  if (reduceMotion) return theme === 'dark' ? 0.16 : 0.06;
+  return theme === 'dark' ? 0.48 : 0.2;
 }
 
 function placeCamera(camera: THREE.PerspectiveCamera, state: HoloSphereHandle['cameraState']) {
@@ -80,8 +80,8 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(1, 1),
       bloomStrengthFor(themeRef.current, reduceMotionRef.current),
-      0.55,
-      themeRef.current === 'dark' ? 0.2 : 0.45,
+      0.32,
+      themeRef.current === 'dark' ? 0.55 : 0.68,
     );
     bloomRef.current = bloomPass;
     composer.addPass(bloomPass);
@@ -231,7 +231,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
     if (bloom) {
       bloom.strength = bloomStrengthFor(theme, reduceMotion);
-      bloom.threshold = theme === 'dark' ? 0.2 : 0.45;
+      bloom.threshold = theme === 'dark' ? 0.55 : 0.68;
     }
   }, [theme, reduceMotion]);
 
