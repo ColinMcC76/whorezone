@@ -3,9 +3,10 @@ import * as THREE from 'three';
 export type SiteTheme = 'light' | 'dark';
 
 export const SPHERE_RADIUS = 2.35;
-export const SWARM_COUNT = 2000;
+export const DESKTOP_SWARM_COUNT = 5500;
+export const MOBILE_SWARM_COUNT = 1800;
 export const MAX_POKES = 6;
-const ORB_RADIUS = 0.045;
+const ORB_RADIUS = 0.03;
 
 export type PokeWave = {
   dir: THREE.Vector3;
@@ -18,12 +19,14 @@ export type HoloSphereHandle = {
   camera: THREE.PerspectiveCamera;
   swarm: THREE.InstancedMesh;
   hitSphere: THREE.Mesh;
+  count: number;
   homes: Float32Array;
+  positions: Float32Array;
+  velocities: Float32Array;
   phases: Float32Array;
   scales: Float32Array;
   pokes: PokeWave[];
   cameraState: { yaw: number; pitch: number; distance: number };
-  ground: THREE.MeshStandardMaterial;
   dispose: () => void;
 };
 
@@ -36,16 +39,28 @@ function unit(index: number) {
 
 function waveAt(nx: number, ny: number, nz: number, poke: PokeWave, time: number) {
   const age = time - poke.birth;
-  if (age < 0 || age > 2.6) return 0;
+  if (age < 0 || age > 2.8) return 0;
   const dot = nx * poke.dir.x + ny * poke.dir.y + nz * poke.dir.z;
   const ang = Math.acos(Math.min(1, Math.max(-1, dot)));
-  const front = age * 2.05;
-  const band = Math.exp(-Math.pow((ang - front) * 4.0, 2));
-  const decay = Math.exp(-age * 1.2);
+  const front = age * 1.85;
+  const band = Math.exp(-Math.pow((ang - front) * 3.6, 2));
+  const decay = Math.exp(-age * 0.95);
   return band * decay * poke.strength;
 }
 
-export function createHoloSphere(): HoloSphereHandle {
+/** Pick swarm size once at startup. Phones / weak GPUs get the lighter count. */
+export function chooseSwarmCount(
+  width = typeof window !== 'undefined' ? window.innerWidth : 1280,
+  coarsePointer = typeof window !== 'undefined'
+    ? window.matchMedia('(pointer: coarse)').matches
+    : false,
+  cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 8 : 8,
+): number {
+  if (width < 820 || coarsePointer || cores <= 4) return MOBILE_SWARM_COUNT;
+  return DESKTOP_SWARM_COUNT;
+}
+
+export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a0a);
   scene.fog = new THREE.Fog(0x0a0a0a, 14, 36);
@@ -53,50 +68,54 @@ export function createHoloSphere(): HoloSphereHandle {
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
   const cameraState = { yaw: 0.55, pitch: 0.28, distance: 8.4 };
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-  const key = new THREE.DirectionalLight(0xffffff, 1.1);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  const key = new THREE.DirectionalLight(0xffffff, 1.15);
   key.position.set(4, 8, 5);
   scene.add(key);
 
-  const homes = new Float32Array(SWARM_COUNT * 3);
-  const phases = new Float32Array(SWARM_COUNT);
-  const scales = new Float32Array(SWARM_COUNT);
+  const homes = new Float32Array(count * 3);
+  const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count * 3);
+  const phases = new Float32Array(count);
+  const scales = new Float32Array(count);
 
-  for (let i = 0; i < SWARM_COUNT; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const u = unit(i);
     const v = unit(i + 3);
-    // Bias toward the surface so the swarm reads as a ball of lights.
-    const surfaceBias = Math.pow(unit(i + 7), 0.35);
+    const surfaceBias = Math.pow(unit(i + 7), 0.2);
     const theta = u * Math.PI * 2;
     const phi = Math.acos(2 * v - 1);
-    const r = SPHERE_RADIUS * (0.42 + surfaceBias * 0.56);
+    const r = SPHERE_RADIUS * (0.55 + surfaceBias * 0.44);
     const ix = i * 3;
     homes[ix] = r * Math.sin(phi) * Math.cos(theta);
     homes[ix + 1] = r * Math.cos(phi);
     homes[ix + 2] = r * Math.sin(phi) * Math.sin(theta);
+    positions[ix] = homes[ix];
+    positions[ix + 1] = homes[ix + 1];
+    positions[ix + 2] = homes[ix + 2];
     phases[i] = unit(i + 19) * Math.PI * 2;
-    scales[i] = 0.7 + unit(i + 23) * 0.7;
+    scales[i] = 0.65 + unit(i + 23) * 0.75;
   }
 
-  const orbGeometry = new THREE.SphereGeometry(ORB_RADIUS, 12, 10);
+  const orbGeometry = new THREE.SphereGeometry(ORB_RADIUS, 10, 8);
   const orbMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf4f4f4,
+    color: 0xd8d8d8,
     emissive: 0xffffff,
-    emissiveIntensity: 2.2,
-    roughness: 0.25,
-    metalness: 0.0,
+    emissiveIntensity: 1.15,
+    roughness: 0.32,
+    metalness: 0,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.78,
     depthWrite: false,
   });
 
-  const swarm = new THREE.InstancedMesh(orbGeometry, orbMaterial, SWARM_COUNT);
+  const swarm = new THREE.InstancedMesh(orbGeometry, orbMaterial, count);
   swarm.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   swarm.frustumCulled = false;
 
-  for (let i = 0; i < SWARM_COUNT; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const ix = i * 3;
-    scratch.position.set(homes[ix], homes[ix + 1], homes[ix + 2]);
+    scratch.position.set(positions[ix], positions[ix + 1], positions[ix + 2]);
     scratch.scale.setScalar(scales[i]);
     scratch.updateMatrix();
     swarm.setMatrixAt(i, scratch.matrix);
@@ -110,17 +129,6 @@ export function createHoloSphere(): HoloSphereHandle {
   );
   scene.add(hitSphere);
 
-  const groundGeometry = new THREE.CircleGeometry(14, 48);
-  const ground = new THREE.MeshStandardMaterial({
-    color: 0x111111,
-    roughness: 1,
-    metalness: 0,
-  });
-  const groundMesh = new THREE.Mesh(groundGeometry, ground);
-  groundMesh.rotation.x = -Math.PI / 2;
-  groundMesh.position.y = -SPHERE_RADIUS - 0.35;
-  scene.add(groundMesh);
-
   const pokes: PokeWave[] = [];
 
   const handle: HoloSphereHandle = {
@@ -128,19 +136,19 @@ export function createHoloSphere(): HoloSphereHandle {
     camera,
     swarm,
     hitSphere,
+    count,
     homes,
+    positions,
+    velocities,
     phases,
     scales,
     pokes,
     cameraState,
-    ground,
     dispose() {
       orbGeometry.dispose();
       orbMaterial.dispose();
       hitSphere.geometry.dispose();
       (hitSphere.material as THREE.Material).dispose();
-      groundGeometry.dispose();
-      ground.dispose();
       swarm.dispose();
     },
   };
@@ -154,21 +162,19 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
   const background = dark ? 0x0a0a0a : 0xf4f4f4;
   holo.scene.background = new THREE.Color(background);
   holo.scene.fog = new THREE.Fog(background, 14, 36);
-  holo.ground.color.setHex(dark ? 0x111111 : 0xe4e4e4);
 
   const material = holo.swarm.material as THREE.MeshStandardMaterial;
   if (dark) {
-    material.color.setHex(0xd8d8d8);
+    material.color.setHex(0xcfcfcf);
     material.emissive.setHex(0xffffff);
-    material.emissiveIntensity = 2.4;
-    material.opacity = 0.88;
+    material.emissiveIntensity = 1.2;
+    material.opacity = 0.78;
   } else {
-    material.color.setHex(0x222222);
+    material.color.setHex(0x1f1f1f);
     material.emissive.setHex(0x111111);
-    material.emissiveIntensity = 0.7;
-    material.opacity = 0.62;
+    material.emissiveIntensity = 0.4;
+    material.opacity = 0.5;
   }
-  material.blending = THREE.NormalBlending;
   material.needsUpdate = true;
 }
 
@@ -180,55 +186,116 @@ export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: num
 export function stepSwarm(
   holo: HoloSphereHandle,
   time: number,
-  _delta: number,
+  delta: number,
   reduceMotion: boolean,
 ) {
-  const { homes, phases, scales, pokes, swarm } = holo;
+  const { count, homes, positions, velocities, phases, scales, pokes, swarm } = holo;
+  const dt = Math.min(delta, 0.033);
 
-  for (let i = 0; i < SWARM_COUNT; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const ix = i * 3;
     const hx = homes[ix];
     const hy = homes[ix + 1];
     const hz = homes[ix + 2];
-    const len = Math.hypot(hx, hy, hz) || 1;
-    const nx = hx / len;
-    const ny = hy / len;
-    const nz = hz / len;
+    const homeLen = Math.hypot(hx, hy, hz) || 1;
+    const nx = hx / homeLen;
+    const ny = hy / homeLen;
+    const nz = hz / homeLen;
 
-    let x = hx;
-    let y = hy;
-    let z = hz;
+    let x = positions[ix];
+    let y = positions[ix + 1];
+    let z = positions[ix + 2];
+    let vx = velocities[ix];
+    let vy = velocities[ix + 1];
+    let vz = velocities[ix + 2];
     let scale = scales[i];
 
-    if (!reduceMotion) {
+    if (reduceMotion) {
+      x = hx;
+      y = hy;
+      z = hz;
+      vx = 0;
+      vy = 0;
+      vz = 0;
+    } else {
       const phase = phases[i];
-      // High-frequency shudder around the home seat.
-      const shudder = 0.018 + 0.01 * Math.sin(time * 7.5 + phase);
-      x += Math.sin(time * 18.0 + phase) * shudder;
-      y += Math.cos(time * 16.5 + phase * 1.3) * shudder;
-      z += Math.sin(time * 17.2 + phase * 0.7) * shudder;
 
-      // Slow fluid drift so the surface feels alive.
-      const drift = 0.035;
-      x += Math.sin(time * 0.7 + phase) * drift * nx;
-      y += Math.cos(time * 0.55 + phase * 0.4) * drift * ny;
-      z += Math.sin(time * 0.63 + phase * 0.9) * drift * nz;
+      // Spring back to home seat.
+      const spring = 7.5;
+      vx += (hx - x) * spring * dt;
+      vy += (hy - y) * spring * dt;
+      vz += (hz - z) * spring * dt;
 
+      // Soft surface cohesion: nudge along the sphere tangent toward a drifting neighbor bias.
+      const cohesion = 0.55;
+      const cx = Math.sin(time * 0.55 + phase) * cohesion;
+      const cy = Math.cos(time * 0.42 + phase * 0.7) * cohesion;
+      const cz = Math.sin(time * 0.48 + phase * 1.1) * cohesion;
+      // Project drift onto tangent plane.
+      const cDot = cx * nx + cy * ny + cz * nz;
+      vx += (cx - nx * cDot) * dt;
+      vy += (cy - ny * cDot) * dt;
+      vz += (cz - nz * cDot) * dt;
+
+      // Poke wave impulse — slosh outward then settle.
       let ripple = 0;
       for (const poke of pokes) {
         const wave = waveAt(nx, ny, nz, poke, time);
         ripple += wave;
+        const impulse = wave * 18;
+        vx += nx * impulse * dt;
+        vy += ny * impulse * dt;
+        vz += nz * impulse * dt;
+        // Tangential swirl for a more fluid look.
+        vx += (ny * poke.dir.z - nz * poke.dir.y) * wave * 6 * dt;
+        vy += (nz * poke.dir.x - nx * poke.dir.z) * wave * 6 * dt;
+        vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 6 * dt;
       }
-      x += nx * ripple * 0.34;
-      y += ny * ripple * 0.34;
-      z += nz * ripple * 0.34;
-      // Extra shudder on the wave front.
-      const jolt = ripple * 0.05;
-      x += Math.sin(time * 40 + phase) * jolt;
-      y += Math.cos(time * 37 + phase) * jolt;
-      z += Math.sin(time * 43 + phase) * jolt;
-      scale *= 1 + ripple * 0.55;
+
+      // High-frequency shudder (velocity jitter, not hard offset).
+      const shudder = 0.35 + ripple * 1.8;
+      vx += Math.sin(time * 22 + phase) * shudder * dt;
+      vy += Math.cos(time * 19 + phase * 1.2) * shudder * dt;
+      vz += Math.sin(time * 24 + phase * 0.6) * shudder * dt;
+
+      // Damping.
+      const damp = Math.exp(-3.2 * dt);
+      vx *= damp;
+      vy *= damp;
+      vz *= damp;
+
+      x += vx * dt;
+      y += vy * dt;
+      z += vz * dt;
+
+      // Keep roughly inside / near the ball radius.
+      const dist = Math.hypot(x, y, z) || 1;
+      const maxR = SPHERE_RADIUS * 1.08;
+      const minR = SPHERE_RADIUS * 0.28;
+      if (dist > maxR) {
+        const s = maxR / dist;
+        x *= s;
+        y *= s;
+        z *= s;
+        vx *= 0.5;
+        vy *= 0.5;
+        vz *= 0.5;
+      } else if (dist < minR) {
+        const s = minR / dist;
+        x *= s;
+        y *= s;
+        z *= s;
+      }
+
+      scale *= 1 + ripple * 0.45;
     }
+
+    positions[ix] = x;
+    positions[ix + 1] = y;
+    positions[ix + 2] = z;
+    velocities[ix] = vx;
+    velocities[ix + 1] = vy;
+    velocities[ix + 2] = vz;
 
     scratch.position.set(x, y, z);
     scratch.scale.setScalar(scale);

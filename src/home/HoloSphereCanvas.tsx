@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {
+  chooseSwarmCount,
   createHoloSphere,
   paintHoloSphere,
   pushPoke,
@@ -16,6 +21,11 @@ type HoloSphereCanvasProps = {
 
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 
+function bloomStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
+  if (reduceMotion) return theme === 'dark' ? 0.16 : 0.06;
+  return theme === 'dark' ? 0.48 : 0.2;
+}
+
 function placeCamera(camera: THREE.PerspectiveCamera, state: HoloSphereHandle['cameraState']) {
   const cosPitch = Math.cos(state.pitch);
   camera.position.set(
@@ -30,6 +40,11 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
   const hostRef = useRef<HTMLDivElement>(null);
   const holoRef = useRef<HoloSphereHandle | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const bloomRef = useRef<UnrealBloomPass | null>(null);
+  const themeRef = useRef(theme);
+  const reduceMotionRef = useRef(reduceMotion);
+  themeRef.current = theme;
+  reduceMotionRef.current = reduceMotion;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -49,24 +64,41 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
     rendererRef.current = renderer;
 
-    const holo = createHoloSphere();
+    const count = chooseSwarmCount();
+    const holo = createHoloSphere(count);
     holoRef.current = holo;
-    paintHoloSphere(holo, theme);
-    renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
+    paintHoloSphere(holo, themeRef.current);
+    renderer.setClearColor(themeRef.current === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
     const { scene, camera, hitSphere, cameraState } = holo;
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(1, 1),
+      bloomStrengthFor(themeRef.current, reduceMotionRef.current),
+      0.32,
+      themeRef.current === 'dark' ? 0.55 : 0.68,
+    );
+    bloomRef.current = bloomPass;
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
 
     const resize = () => {
       const width = host.clientWidth || 1;
       const height = host.clientHeight || window.innerHeight || 1;
       renderer.setSize(width, height, false);
+      composer.setSize(width, height);
+      bloomPass.resolution.set(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     };
     resize();
     placeCamera(camera, cameraState);
-    stepSwarm(holo, 0, 0, reduceMotion);
+    stepSwarm(holo, 0, 0, reduceMotionRef.current);
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -136,7 +168,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         return;
       }
 
-      if (pointerDown && !moved && !reduceMotion) {
+      if (pointerDown && !moved && !reduceMotionRef.current) {
         const hit = hitBall(event);
         if (hit) {
           pushPoke(holo, hit.point, clock, 1);
@@ -167,9 +199,9 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
       clock += delta;
-      stepSwarm(holo, clock, delta, reduceMotion);
+      stepSwarm(holo, clock, delta, reduceMotionRef.current);
       placeCamera(camera, cameraState);
-      renderer.render(scene, camera);
+      composer.render();
     };
     loop(performance.now());
 
@@ -181,20 +213,27 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       canvas.removeEventListener('pointercancel', onPointerUp);
       observer.disconnect();
       holo.dispose();
+      composer.dispose();
       renderer.dispose();
       holoRef.current = null;
       rendererRef.current = null;
+      bloomRef.current = null;
       canvas.remove();
     };
-  }, [reduceMotion]);
+  }, []);
 
   useEffect(() => {
     const holo = holoRef.current;
     const renderer = rendererRef.current;
+    const bloom = bloomRef.current;
     if (!holo || !renderer) return;
     paintHoloSphere(holo, theme);
     renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
-  }, [theme]);
+    if (bloom) {
+      bloom.strength = bloomStrengthFor(theme, reduceMotion);
+      bloom.threshold = theme === 'dark' ? 0.55 : 0.68;
+    }
+  }, [theme, reduceMotion]);
 
   return <div ref={hostRef} className="landing-canvas-host" aria-hidden="true" />;
 }
