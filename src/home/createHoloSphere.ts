@@ -46,12 +46,12 @@ function unit(index: number) {
 
 function waveAt(nx: number, ny: number, nz: number, poke: PokeWave, time: number) {
   const age = time - poke.birth;
-  if (age < 0 || age > 2.4) return 0;
+  if (age < 0 || age > 3.2) return 0;
   const dot = nx * poke.dir.x + ny * poke.dir.y + nz * poke.dir.z;
   const ang = Math.acos(Math.min(1, Math.max(-1, dot)));
-  const front = age * 1.55;
-  const band = Math.exp(-Math.pow((ang - front) * 4.4, 2));
-  const decay = Math.exp(-age * 1.35);
+  const front = age * 1.7;
+  const band = Math.exp(-Math.pow((ang - front) * 3.2, 2));
+  const decay = Math.exp(-age * 0.85);
   return band * decay * poke.strength;
 }
 
@@ -191,7 +191,7 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
   material.needsUpdate = true;
 }
 
-export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: number, strength = 0.55) {
+export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: number, strength = 1.15) {
   holo.pokes.unshift({ dir: point.clone().normalize(), birth: time, strength });
   if (holo.pokes.length > MAX_POKES) holo.pokes.length = MAX_POKES;
 }
@@ -270,43 +270,43 @@ export function stepSwarm(
       vy += (cy - ny * cDot) * dt;
       vz += (cz - nz * cDot) * dt;
 
-      // Poke wave impulse — subtle slosh, then settle.
+      // Poke wave impulse — pronounced slosh, then settle.
       let ripple = 0;
       for (const poke of pokes) {
         const wave = waveAt(nx, ny, nz, poke, time);
         ripple += wave;
-        const impulse = wave * 7;
+        const impulse = wave * 16;
         vx += nx * impulse * dt;
         vy += ny * impulse * dt;
         vz += nz * impulse * dt;
-        // Light tangential swirl.
-        vx += (ny * poke.dir.z - nz * poke.dir.y) * wave * 2.2 * dt;
-        vy += (nz * poke.dir.x - nx * poke.dir.z) * wave * 2.2 * dt;
-        vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 2.2 * dt;
+        // Tangential swirl for a clearer fluid wake.
+        vx += (ny * poke.dir.z - nz * poke.dir.y) * wave * 5.5 * dt;
+        vy += (nz * poke.dir.x - nx * poke.dir.z) * wave * 5.5 * dt;
+        vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 5.5 * dt;
       }
 
-      // Hover: part orbs around the cursor and give them a soft shimmer.
+      // Hover: tight local part under the cursor with a soft shimmer.
       let hoverInfluence = 0;
       if (hover.strength > 0) {
         const hDot = nx * hover.dir.x + ny * hover.dir.y + nz * hover.dir.z;
-        hoverInfluence = Math.exp(-Math.pow(Math.max(0, 1 - hDot) * 7.5, 2)) * hover.strength;
+        hoverInfluence = Math.exp(-Math.pow(Math.max(0, 1 - hDot) * 16, 2)) * hover.strength;
         if (hoverInfluence > 0.002) {
           // Radial push away from the surface under the cursor.
-          vx += nx * hoverInfluence * 5.5 * dt;
-          vy += ny * hoverInfluence * 5.5 * dt;
-          vz += nz * hoverInfluence * 5.5 * dt;
+          vx += nx * hoverInfluence * 6.5 * dt;
+          vy += ny * hoverInfluence * 6.5 * dt;
+          vz += nz * hoverInfluence * 6.5 * dt;
           // Tangential scatter so the patch opens like a soft wake.
           const sx = ny * hover.dir.z - nz * hover.dir.y;
           const sy = nz * hover.dir.x - nx * hover.dir.z;
           const sz = nx * hover.dir.y - ny * hover.dir.x;
-          vx += sx * hoverInfluence * 3.2 * dt;
-          vy += sy * hoverInfluence * 3.2 * dt;
-          vz += sz * hoverInfluence * 3.2 * dt;
+          vx += sx * hoverInfluence * 3.8 * dt;
+          vy += sy * hoverInfluence * 3.8 * dt;
+          vz += sz * hoverInfluence * 3.8 * dt;
         }
       }
 
       // High-frequency shudder (velocity jitter, not hard offset).
-      const shudder = 0.28 + ripple * 0.55 + hoverInfluence * 1.4;
+      const shudder = 0.28 + ripple * 1.35 + hoverInfluence * 1.1;
       vx += Math.sin(time * 22 + phase) * shudder * dt;
       vy += Math.cos(time * 19 + phase * 1.2) * shudder * dt;
       vz += Math.sin(time * 24 + phase * 0.6) * shudder * dt;
@@ -340,7 +340,7 @@ export function stepSwarm(
         z *= s;
       }
 
-      scale *= breath * (1 + ripple * 0.14 + hoverInfluence * 0.35);
+      scale *= breath * (1 + ripple * 0.38 + hoverInfluence * 0.28);
     }
 
     positions[ix] = x;
