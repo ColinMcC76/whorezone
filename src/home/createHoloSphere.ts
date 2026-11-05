@@ -39,12 +39,12 @@ function unit(index: number) {
 
 function waveAt(nx: number, ny: number, nz: number, poke: PokeWave, time: number) {
   const age = time - poke.birth;
-  if (age < 0 || age > 2.8) return 0;
+  if (age < 0 || age > 2.4) return 0;
   const dot = nx * poke.dir.x + ny * poke.dir.y + nz * poke.dir.z;
   const ang = Math.acos(Math.min(1, Math.max(-1, dot)));
-  const front = age * 1.85;
-  const band = Math.exp(-Math.pow((ang - front) * 3.6, 2));
-  const decay = Math.exp(-age * 0.95);
+  const front = age * 1.55;
+  const band = Math.exp(-Math.pow((ang - front) * 4.4, 2));
+  const decay = Math.exp(-age * 1.35);
   return band * decay * poke.strength;
 }
 
@@ -101,7 +101,7 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   const orbMaterial = new THREE.MeshStandardMaterial({
     color: 0xd8d8d8,
     emissive: 0xffffff,
-    emissiveIntensity: 1.15,
+    emissiveIntensity: 0.69,
     roughness: 0.32,
     metalness: 0,
     transparent: true,
@@ -167,18 +167,18 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
   if (dark) {
     material.color.setHex(0xcfcfcf);
     material.emissive.setHex(0xffffff);
-    material.emissiveIntensity = 1.2;
+    material.emissiveIntensity = 0.72;
     material.opacity = 0.78;
   } else {
     material.color.setHex(0x1f1f1f);
     material.emissive.setHex(0x111111);
-    material.emissiveIntensity = 0.4;
+    material.emissiveIntensity = 0.24;
     material.opacity = 0.5;
   }
   material.needsUpdate = true;
 }
 
-export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: number, strength = 1) {
+export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: number, strength = 0.55) {
   holo.pokes.unshift({ dir: point.clone().normalize(), birth: time, strength });
   if (holo.pokes.length > MAX_POKES) holo.pokes.length = MAX_POKES;
 }
@@ -220,11 +220,17 @@ export function stepSwarm(
     } else {
       const phase = phases[i];
 
-      // Spring back to home seat.
+      // Passive breath: slow radial expand/contract of each orb's home seat.
+      const breath = 1 + Math.sin(time * 0.85 + phase * 0.15) * 0.028;
+      const tx = hx * breath;
+      const ty = hy * breath;
+      const tz = hz * breath;
+
+      // Spring back to breathing home seat.
       const spring = 7.5;
-      vx += (hx - x) * spring * dt;
-      vy += (hy - y) * spring * dt;
-      vz += (hz - z) * spring * dt;
+      vx += (tx - x) * spring * dt;
+      vy += (ty - y) * spring * dt;
+      vz += (tz - z) * spring * dt;
 
       // Soft surface cohesion: nudge along the sphere tangent toward a drifting neighbor bias.
       const cohesion = 0.55;
@@ -237,23 +243,23 @@ export function stepSwarm(
       vy += (cy - ny * cDot) * dt;
       vz += (cz - nz * cDot) * dt;
 
-      // Poke wave impulse — slosh outward then settle.
+      // Poke wave impulse — subtle slosh, then settle.
       let ripple = 0;
       for (const poke of pokes) {
         const wave = waveAt(nx, ny, nz, poke, time);
         ripple += wave;
-        const impulse = wave * 18;
+        const impulse = wave * 7;
         vx += nx * impulse * dt;
         vy += ny * impulse * dt;
         vz += nz * impulse * dt;
-        // Tangential swirl for a more fluid look.
-        vx += (ny * poke.dir.z - nz * poke.dir.y) * wave * 6 * dt;
-        vy += (nz * poke.dir.x - nx * poke.dir.z) * wave * 6 * dt;
-        vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 6 * dt;
+        // Light tangential swirl.
+        vx += (ny * poke.dir.z - nz * poke.dir.y) * wave * 2.2 * dt;
+        vy += (nz * poke.dir.x - nx * poke.dir.z) * wave * 2.2 * dt;
+        vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 2.2 * dt;
       }
 
       // High-frequency shudder (velocity jitter, not hard offset).
-      const shudder = 0.35 + ripple * 1.8;
+      const shudder = 0.28 + ripple * 0.55;
       vx += Math.sin(time * 22 + phase) * shudder * dt;
       vy += Math.cos(time * 19 + phase * 1.2) * shudder * dt;
       vz += Math.sin(time * 24 + phase * 0.6) * shudder * dt;
@@ -287,7 +293,7 @@ export function stepSwarm(
         z *= s;
       }
 
-      scale *= 1 + ripple * 0.45;
+      scale *= breath * (1 + ripple * 0.14);
     }
 
     positions[ix] = x;
