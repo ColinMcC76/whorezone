@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import PyramidCanvas from '../home/PyramidCanvas';
+import ThemeSwitch from '../components/ThemeSwitch';
+import HoloSphereCanvas from '../home/HoloSphereCanvas';
 import { siteConfig } from '../config/siteConfig';
+import { useTheme } from '../theme/ThemeProvider';
 import '../home/landing.css';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -27,18 +29,16 @@ function useReducedMotion() {
 }
 
 export default function Home() {
-  const pinRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    document.body.classList.add('landing-open');
-    return () => document.body.classList.remove('landing-open');
-  }, []);
+  const { theme } = useTheme();
 
   return (
-    <section className="landing" ref={pinRef} aria-label="Landing">
-      <PyramidCanvas pinRef={pinRef} reduceMotion={reduceMotion} />
+    <section className="landing-stage" aria-label="Landing">
+      <HoloSphereCanvas reduceMotion={reduceMotion} theme={theme} />
       <p className="landing-wordmark">{siteConfig.name}</p>
+      <div className="landing-tools">
+        <ThemeSwitch />
+      </div>
       <nav className="landing-nav" aria-label="Site">
         {landingLinks.map((link) => (
           <Link key={link.to} to={link.to}>

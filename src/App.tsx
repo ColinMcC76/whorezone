@@ -40,7 +40,12 @@ function readStoredUser(): User | null {
 
 function AppRoutes() {
   const navigate = useNavigate();
-  const isLanding = useLocation().pathname === '/';
+  const location = useLocation();
+  const isLanding = location.pathname === '/';
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(tokenStorageKey));
   const [user, setUser] = useState<User | null>(() => readStoredUser());
 

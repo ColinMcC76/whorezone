@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Chapter from '../components/Chapter';
+import PageShell from '../components/PageShell';
 import { authApi, updateMyAccount } from '../lib/api';
 import type { User } from '../lib/types';
 
@@ -58,59 +60,64 @@ export default function Account({ token, user, onUserUpdate, onTokenUpdate, onLo
   };
 
   return (
-    <div className="container page-shell auth-shell">
-      <h1 className="section-title">Account</h1>
-      <p className="page-copy">
-        Signed in as <strong>{user.displayName}</strong> ({user.email})
-      </p>
-      <p className="page-copy small-note">
-        Sign-in method: <code>{user.authProvider}</code>
-      </p>
-
-      {user.role === 'admin' && (
-        <p className="page-copy">
-          <Link to="/admin/blog">Open blog admin</Link>
+    <PageShell label="Account">
+      <Chapter
+        className="chapter-stage"
+        eyebrow="Settings"
+        title="Account"
+        lead={`Signed in as ${user.displayName} (${user.email}).`}
+      >
+        <p className="page-copy small-note">
+          Sign-in method: <code>{user.authProvider}</code>
         </p>
-      )}
 
-      {user.authProvider === 'local' ? (
-        <form onSubmit={onSave} className="admin-form">
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            New password (optional)
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={8}
-            />
-          </label>
-          <button className="cta" type="submit" disabled={loading}>
-            {loading ? 'Saving…' : 'Save changes'}
+        {user.role === 'admin' && (
+          <p className="page-copy">
+            <Link to="/admin/blog">Open blog admin</Link>
+          </p>
+        )}
+
+        {user.authProvider === 'local' ? (
+          <form onSubmit={onSave} className="admin-form">
+            <label>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              New password (optional)
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+              />
+            </label>
+            <button className="cta" type="submit" disabled={loading}>
+              {loading ? 'Saving…' : 'Save changes'}
+            </button>
+          </form>
+        ) : (
+          <p className="page-copy">
+            Email and password for this account are managed by {user.authProvider}. Use that provider’s
+            security settings to change them.
+          </p>
+        )}
+
+        {message && <p className="page-copy">{message}</p>}
+        {error && <p className="error-message">{error}</p>}
+
+        <div className="chapter-actions">
+          <button type="button" className="cta-outline" onClick={onLogout}>
+            Log out
           </button>
-        </form>
-      ) : (
-        <p className="page-copy">
-          Email and password for this account are managed by {user.authProvider}. Use that provider’s
-          security settings to change them.
-        </p>
-      )}
-
-      {message && <p className="page-copy">{message}</p>}
-      {error && <p className="error-message">{error}</p>}
-
-      <button type="button" className="cta-outline" onClick={onLogout}>
-        Log out
-      </button>
-    </div>
+        </div>
+      </Chapter>
+    </PageShell>
   );
 }
