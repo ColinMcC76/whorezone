@@ -217,6 +217,41 @@ button {
   color: var(--muted);
 }
 
+.repo-card {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+}
+
+.repo-card .card-title {
+  margin-bottom: 0;
+}
+
+.repo-card .card-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.repo-card .card-title a:hover,
+.repo-card .card-title a:focus-visible {
+  text-decoration: underline;
+}
+
+.repo-card .card-content {
+  margin: 0;
+}
+
+.repo-card-meta {
+  margin: 0;
+}
+
+.repo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
 .stack {
   display: grid;
   gap: 1rem;
