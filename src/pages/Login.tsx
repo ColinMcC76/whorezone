@@ -1,5 +1,7 @@
 import React, { FormEvent, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import Chapter from '../components/Chapter';
+import PageShell from '../components/PageShell';
 import { API_ORIGIN, authApi } from '../lib/api';
 import type { User } from '../lib/types';
 
@@ -40,92 +42,96 @@ export default function Login({ onAuthSuccess }: LoginProps) {
   };
 
   return (
-    <div className="container page-shell auth-shell">
-      <h1 className="section-title">{mode === 'register' ? 'Create account' : 'Sign in'}</h1>
-      <p className="page-copy">
-        {mode === 'register'
-          ? 'Passwords are hashed on the server — plain text passwords are never stored.'
-          : 'Welcome back. Use email/password or a linked provider.'}
-      </p>
+    <PageShell label={mode === 'register' ? 'Register' : 'Sign in'}>
+      <Chapter
+        className="chapter-stage"
+        eyebrow="Account"
+        title={mode === 'register' ? 'Create account' : 'Sign in'}
+        lead={
+          mode === 'register'
+            ? 'Passwords are hashed on the server — plain text passwords are never stored.'
+            : 'Welcome back. Use email/password or a linked provider.'
+        }
+      >
+        <div className="oauth-row">
+          <a className="cta-outline oauth-btn" href={googleStartUrl}>
+            Continue with Google
+          </a>
+          <a className="cta-outline oauth-btn" href={discordStartUrl}>
+            Continue with Discord
+          </a>
+        </div>
+        <p className="page-copy small-note">
+          OAuth requires API env vars on the server (see README). If a button errors, configure Google/Discord
+          credentials in Render first.
+        </p>
 
-      <div className="oauth-row">
-        <a className="cta-outline oauth-btn" href={googleStartUrl}>
-          Continue with Google
-        </a>
-        <a className="cta-outline oauth-btn" href={discordStartUrl}>
-          Continue with Discord
-        </a>
-      </div>
-      <p className="page-copy small-note">
-        OAuth requires API env vars on the server (see README). If a button errors, configure Google/Discord
-        credentials in Render first.
-      </p>
-
-      <form onSubmit={onSubmit} className="admin-form">
-        {mode === 'register' && (
+        <form onSubmit={onSubmit} className="admin-form">
+          {mode === 'register' && (
+            <label>
+              Display name
+              <input
+                type="text"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                required
+                minLength={2}
+                maxLength={80}
+              />
+            </label>
+          )}
           <label>
-            Display name
+            Email
             <input
-              type="text"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
-              minLength={2}
-              maxLength={80}
             />
           </label>
-        )}
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={8}
-            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-          />
-        </label>
-        <button className="cta" type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? mode === 'register'
-              ? 'Creating account…'
-              : 'Signing in…'
-            : mode === 'register'
-              ? 'Create account'
-              : 'Sign in'}
-        </button>
-      </form>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={8}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            />
+          </label>
+          <button className="cta" type="submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? mode === 'register'
+                ? 'Creating account…'
+                : 'Signing in…'
+              : mode === 'register'
+                ? 'Create account'
+                : 'Sign in'}
+          </button>
+        </form>
 
-      {error && <p className="error-message">{error}</p>}
+        {error && <p className="error-message">{error}</p>}
 
-      <p className="page-copy small-note">
-        {mode === 'register' ? (
-          <>
-            Already have an account? <Link to="/login">Sign in</Link>
-          </>
-        ) : (
-          <>
-            New here? <Link to="/login?mode=register">Create an account</Link>
-          </>
-        )}
-      </p>
-
-      {mode === 'login' && (
         <p className="page-copy small-note">
-          Blog admin uses the seeded account: <code>admin@example.com</code> / <code>change-me-admin</code>{' '}
-          (change this password in production).
+          {mode === 'register' ? (
+            <>
+              Already have an account? <Link to="/login">Sign in</Link>
+            </>
+          ) : (
+            <>
+              New here? <Link to="/login?mode=register">Create an account</Link>
+            </>
+          )}
         </p>
-      )}
-    </div>
+
+        {mode === 'login' && (
+          <p className="page-copy small-note">
+            Blog admin uses the seeded account: <code>admin@example.com</code> / <code>change-me-admin</code>{' '}
+            (change this password in production).
+          </p>
+        )}
+      </Chapter>
+    </PageShell>
   );
 }
