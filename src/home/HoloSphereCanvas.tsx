@@ -4,8 +4,7 @@ import {
   createHoloSphere,
   paintHoloSphere,
   pushPoke,
-  stepParticles,
-  syncPokeUniforms,
+  stepSwarm,
   type HoloSphereHandle,
   type SiteTheme,
 } from './createHoloSphere';
@@ -56,7 +55,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     holoRef.current = holo;
     paintHoloSphere(holo, theme);
     renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
-    const { scene, camera, shell, cameraState } = holo;
+    const { scene, camera, hitSphere, cameraState } = holo;
 
     const resize = () => {
       const width = host.clientWidth || 1;
@@ -67,6 +66,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     };
     resize();
     placeCamera(camera, cameraState);
+    stepSwarm(holo, 0, 0, reduceMotion);
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -85,10 +85,10 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       return true;
     };
 
-    const hitShell = (event: PointerEvent) => {
+    const hitBall = (event: PointerEvent) => {
       if (!setPointer(event)) return null;
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObject(shell, false);
+      const hits = raycaster.intersectObject(hitSphere, false);
       return hits[0] ?? null;
     };
 
@@ -98,7 +98,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       moved = false;
       lastX = event.clientX;
       lastY = event.clientY;
-      const hit = hitShell(event);
+      const hit = hitBall(event);
       if (!hit) {
         orbiting = true;
         canvas.setPointerCapture(event.pointerId);
@@ -121,7 +121,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       }
 
       if (!pointerDown) {
-        canvas.style.cursor = hitShell(event) ? 'pointer' : 'grab';
+        canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
       }
     };
 
@@ -137,14 +137,14 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       }
 
       if (pointerDown && !moved && !reduceMotion) {
-        const hit = hitShell(event);
+        const hit = hitBall(event);
         if (hit) {
           pushPoke(holo, hit.point, clock, 1);
         }
       }
 
       pointerDown = false;
-      canvas.style.cursor = hitShell(event) ? 'pointer' : 'grab';
+      canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
       if (canvas.hasPointerCapture(event.pointerId)) {
         canvas.releasePointerCapture(event.pointerId);
       }
@@ -167,8 +167,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
       clock += delta;
-      syncPokeUniforms(holo, clock, reduceMotion);
-      stepParticles(holo, clock, delta, reduceMotion);
+      stepSwarm(holo, clock, delta, reduceMotion);
       placeCamera(camera, cameraState);
       renderer.render(scene, camera);
     };
