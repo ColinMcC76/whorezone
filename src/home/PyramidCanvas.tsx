@@ -1,43 +1,78 @@
-import React, { useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { applyStonePose, createPyramid, paintPyramid, type PyramidHandle, type PyramidStone, type SiteTheme } from './createPyramid';
+import {
+  BLOCK_SIZE,
+  createPyramid,
+  findNearestEmptySeat,
+  paintPyramid,
+  type PyramidHandle,
+  type PyramidStone,
+  type SiteTheme,
+} from './createPyramid';
 
-gsap.registerPlugin(ScrollTrigger);
+export type PyramidCanvasHandle = {
+  restack: () => void;
+};
 
 type PyramidCanvasProps = {
-  scrollRef: React.RefObject<HTMLElement | null>;
   reduceMotion: boolean;
   theme: SiteTheme;
 };
 
-function displayedLift(stone: PyramidStone) {
-  return stone.manual.active ? stone.manual.value : stone.lift.value;
+type BodyState = {
+  body: CANNON.Body;
+  mode: 'seated' | 'dragging' | 'falling';
+};
+
+const LOOK_AT = new THREE.Vector3(0, 1.6, 0);
+const DRAG_HEIGHT = 2.4;
+
+function setBodyPose(body: CANNON.Body, position: THREE.Vector3, rotation = new THREE.Euler()) {
+  body.position.set(position.x, position.y, position.z);
+  const quat = new THREE.Quaternion().setFromEuler(rotation);
+  body.quaternion.set(quat.x, quat.y, quat.z, quat.w);
+  body.velocity.set(0, 0, 0);
+  body.angularVelocity.set(0, 0, 0);
 }
 
-function toggleStone(stone: PyramidStone) {
-  const current = displayedLift(stone);
-  const target = current > 0.5 ? 0 : 1;
-  gsap.killTweensOf(stone.manual);
-  stone.manual.value = current;
-  stone.manual.active = true;
-  gsap.to(stone.manual, {
-    value: target,
-    duration: 0.9,
-    ease: 'power2.inOut',
-  });
+function syncMeshFromBody(stone: PyramidStone, body: CANNON.Body) {
+  stone.mesh.position.set(body.position.x, body.position.y, body.position.z);
+  stone.mesh.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
 }
 
-export default function PyramidCanvas({ scrollRef, reduceMotion, theme }: PyramidCanvasProps) {
+function placeCamera(
+  camera: THREE.PerspectiveCamera,
+  state: PyramidHandle['cameraState'],
+) {
+  const cosPitch = Math.cos(state.pitch);
+  camera.position.set(
+    Math.sin(state.yaw) * state.distance * cosPitch,
+    Math.sin(state.pitch) * state.distance + 1.2,
+    Math.cos(state.yaw) * state.distance * cosPitch,
+  );
+  camera.lookAt(LOOK_AT);
+}
+
+const PyramidCanvas = forwardRef<PyramidCanvasHandle, PyramidCanvasProps>(function PyramidCanvas(
+  { reduceMotion, theme },
+  ref,
+) {
   const hostRef = useRef<HTMLDivElement>(null);
   const pyramidRef = useRef<PyramidHandle | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const bodiesRef = useRef<Map<number, BodyState>>(new Map());
+  const worldRef = useRef<CANNON.World | null>(null);
+  const restackFn = useRef<() => void>(() => undefined);
+
+  useImperativeHandle(ref, () => ({
+    restack: () => restackFn.current(),
+  }));
 
   useEffect(() => {
     const host = hostRef.current;
-    const scroll = scrollRef.current;
-    if (!host || !scroll) return;
+    if (!host) return;
 
     const canvas = document.createElement('canvas');
     canvas.className = 'landing-canvas';
@@ -61,124 +96,305 @@ export default function PyramidCanvas({ scrollRef, reduceMotion, theme }: Pyrami
     renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
     const { scene, camera, stones, cameraState } = pyramid;
 
+    const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -18, 0) });
+    world.allowSleep = true;
+    world.broadphase = new CANNON.SAPBroadphase(world);
+    worldRef.current = world;
+
+    const groundBody = new CANNON.Body({
+      type: CANNON.Body.STATIC,
+      shape: new CANNON.Plane(),
+    });
+    groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    world.addBody(groundBody);
+
+    const boxShape = new CANNON.Box(
+      new CANNON.Vec3(BLOCK_SIZE.x / 2, BLOCK_SIZE.y / 2, BLOCK_SIZE.z / 2),
+    );
+    const bodies = new Map<number, BodyState>();
+    bodiesRef.current = bodies;
+
+    for (const stone of stones) {
+      const body = new CANNON.Body({
+        mass: 1.2,
+        shape: boxShape,
+        linearDamping: 0.35,
+        angularDamping: 0.45,
+        sleepSpeedLimit: 0.18,
+        sleepTimeLimit: 0.35,
+      });
+      setBodyPose(body, stone.home);
+      body.type = CANNON.Body.KINEMATIC;
+      world.addBody(body);
+      bodies.set(stone.id, { body, mode: 'seated' });
+      syncMeshFromBody(stone, body);
+    }
+
     const resize = () => {
-      const width = host.clientWidth || scroll.clientWidth || 1;
+      const width = host.clientWidth || 1;
       const height = host.clientHeight || window.innerHeight || 1;
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     };
     resize();
-
-    const placeCamera = () => {
-      camera.position.set(
-        Math.sin(cameraState.yaw) * cameraState.distance,
-        cameraState.height,
-        Math.cos(cameraState.yaw) * cameraState.distance,
-      );
-      camera.lookAt(0, 2.15, 0);
-    };
-
-    placeCamera();
-
-    let frame = 0;
-    const loop = () => {
-      frame = window.requestAnimationFrame(loop);
-      for (const stone of stones) applyStonePose(stone);
-      placeCamera();
-      renderer.render(scene, camera);
-    };
-    loop();
+    placeCamera(camera, cameraState);
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -DRAG_HEIGHT);
+    const hitPoint = new THREE.Vector3();
     const meshes = stones.map((stone) => stone.mesh);
 
-    const pick = (event: PointerEvent) => {
+    let draggingId: number | null = null;
+    let orbiting = false;
+    let lastX = 0;
+    let lastY = 0;
+    let moved = false;
+
+    const setPointer = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return undefined;
+      if (rect.width === 0 || rect.height === 0) return false;
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      return true;
+    };
+
+    const pickStone = (event: PointerEvent) => {
+      if (!setPointer(event)) return undefined;
       raycaster.setFromCamera(pointer, camera);
-      return raycaster.intersectObjects(meshes, false)[0]?.object as THREE.Mesh | undefined;
+      const hit = raycaster.intersectObjects(meshes, false)[0];
+      if (!hit) return undefined;
+      const id = hit.object.userData.stoneId as number;
+      return stones.find((stone) => stone.id === id);
     };
 
-    const onMove = (event: PointerEvent) => {
-      if (reduceMotion) return;
-      canvas.style.cursor = pick(event) ? 'pointer' : 'default';
+    const seatStone = (stone: PyramidStone, seatId: number) => {
+      const state = bodies.get(stone.id);
+      if (!state) return;
+      gsap.killTweensOf(stone.mesh.position);
+      gsap.killTweensOf(stone.mesh.rotation);
+      stone.seatId = seatId;
+      const target = pyramid.seats[seatId];
+      state.mode = 'seated';
+      state.body.type = CANNON.Body.KINEMATIC;
+      state.body.allowSleep = true;
+      setBodyPose(state.body, target);
+      syncMeshFromBody(stone, state.body);
+      stone.mesh.rotation.set(0, 0, 0);
     };
 
-    const onClick = (event: PointerEvent) => {
-      if (reduceMotion) return;
-      const mesh = pick(event);
-      const stone = mesh?.userData.stone as PyramidStone | undefined;
-      if (stone) toggleStone(stone);
+    const dropStone = (stone: PyramidStone, point: THREE.Vector3) => {
+      const state = bodies.get(stone.id);
+      if (!state) return;
+      stone.seatId = null;
+
+      if (reduceMotion) {
+        const floorPoint = new THREE.Vector3(point.x, BLOCK_SIZE.y / 2, point.z);
+        state.mode = 'seated';
+        state.body.type = CANNON.Body.KINEMATIC;
+        setBodyPose(state.body, floorPoint);
+        syncMeshFromBody(stone, state.body);
+        stone.mesh.rotation.set(0, 0, 0);
+        return;
+      }
+
+      state.mode = 'falling';
+      state.body.type = CANNON.Body.DYNAMIC;
+      state.body.wakeUp();
+      setBodyPose(state.body, point);
+      state.body.velocity.set(0, -1.5, 0);
+      syncMeshFromBody(stone, state.body);
     };
 
-    if (!reduceMotion) {
-      canvas.addEventListener('pointermove', onMove);
-      canvas.addEventListener('click', onClick);
-    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      moved = false;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      const stone = pickStone(event);
+      if (stone) {
+        draggingId = stone.id;
+        stone.seatId = null;
+        const state = bodies.get(stone.id);
+        if (state) {
+          state.mode = 'dragging';
+          state.body.type = CANNON.Body.KINEMATIC;
+          state.body.wakeUp();
+        }
+        canvas.setPointerCapture(event.pointerId);
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+      orbiting = true;
+      canvas.setPointerCapture(event.pointerId);
+      canvas.style.cursor = 'grabbing';
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      lastX = event.clientX;
+      lastY = event.clientY;
+
+      if (draggingId !== null) {
+        if (!setPointer(event)) return;
+        raycaster.setFromCamera(pointer, camera);
+        if (!raycaster.ray.intersectPlane(dragPlane, hitPoint)) return;
+        const clamped = hitPoint.clone();
+        clamped.y = DRAG_HEIGHT;
+        clamped.x = THREE.MathUtils.clamp(clamped.x, -7, 7);
+        clamped.z = THREE.MathUtils.clamp(clamped.z, -7, 7);
+        const stone = stones.find((item) => item.id === draggingId);
+        const state = bodies.get(draggingId);
+        if (!stone || !state) return;
+        setBodyPose(state.body, clamped);
+        syncMeshFromBody(stone, state.body);
+        return;
+      }
+
+      if (orbiting) {
+        cameraState.yaw -= dx * 0.01;
+        cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + dy * 0.006, 0.18, 1.15);
+        placeCamera(camera, cameraState);
+        return;
+      }
+
+      canvas.style.cursor = pickStone(event) ? 'grab' : 'grab';
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (draggingId !== null) {
+        const stone = stones.find((item) => item.id === draggingId);
+        const state = bodies.get(draggingId);
+        if (stone && state) {
+          const release = stone.mesh.position.clone();
+          const seatId = findNearestEmptySeat(pyramid, release);
+          if (seatId !== null) {
+            if (reduceMotion) {
+              seatStone(stone, seatId);
+            } else {
+              const target = pyramid.seats[seatId];
+              stone.seatId = seatId;
+              state.mode = 'seated';
+              state.body.type = CANNON.Body.KINEMATIC;
+              gsap.to(stone.mesh.position, {
+                x: target.x,
+                y: target.y,
+                z: target.z,
+                duration: 0.35,
+                ease: 'power2.out',
+                onUpdate: () => setBodyPose(state.body, stone.mesh.position),
+                onComplete: () => {
+                  setBodyPose(state.body, target);
+                  syncMeshFromBody(stone, state.body);
+                  stone.mesh.rotation.set(0, 0, 0);
+                },
+              });
+              gsap.to(stone.mesh.rotation, { x: 0, y: 0, z: 0, duration: 0.35, ease: 'power2.out' });
+            }
+          } else {
+            dropStone(stone, release);
+          }
+        }
+        draggingId = null;
+      }
+      orbiting = false;
+      canvas.style.cursor = 'grab';
+      if (canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+      void moved;
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerUp);
+    canvas.style.cursor = 'grab';
+    canvas.style.touchAction = 'none';
 
     const observer = new ResizeObserver(resize);
     observer.observe(host);
 
-    const distance = stones.length * 42;
-    if (!reduceMotion) scroll.style.setProperty('--landing-distance', `${distance}px`);
-
-    const context = reduceMotion
-      ? undefined
-      : gsap.context(() => {
-          const timeline = gsap.timeline();
-          const stagger = 0.12;
-          const liftDuration = 0.85;
-          stones.forEach((stone, index) => {
-            timeline.to(
-              stone.lift,
-              { value: 1, duration: liftDuration, ease: 'power2.inOut' },
-              index * stagger,
-            );
-          });
-          const total = Math.max((stones.length - 1) * stagger + liftDuration, 0.01);
-          timeline.to(
-            cameraState,
-            {
-              yaw: cameraState.yaw + 0.85,
-              height: cameraState.height + 2.1,
-              distance: cameraState.distance + 4,
-              duration: total,
-              ease: 'none',
+    restackFn.current = () => {
+      for (const stone of stones) {
+        gsap.killTweensOf(stone.mesh.position);
+        gsap.killTweensOf(stone.mesh.rotation);
+        const state = bodies.get(stone.id);
+        if (!state) continue;
+        stone.seatId = stone.id;
+        state.mode = 'seated';
+        state.body.type = CANNON.Body.KINEMATIC;
+        const target = pyramid.seats[stone.id];
+        if (reduceMotion) {
+          setBodyPose(state.body, target);
+          syncMeshFromBody(stone, state.body);
+          stone.mesh.rotation.set(0, 0, 0);
+        } else {
+          gsap.to(stone.mesh.position, {
+            x: target.x,
+            y: target.y,
+            z: target.z,
+            duration: 0.55,
+            ease: 'power2.inOut',
+            onUpdate: () => setBodyPose(state.body, stone.mesh.position),
+            onComplete: () => {
+              setBodyPose(state.body, target);
+              syncMeshFromBody(stone, state.body);
             },
-            0,
-          );
-          ScrollTrigger.create({
-            trigger: scroll,
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: 0.65,
-            animation: timeline,
           });
-        }, scroll);
+          gsap.to(stone.mesh.rotation, { x: 0, y: 0, z: 0, duration: 0.55, ease: 'power2.inOut' });
+        }
+      }
+    };
+
+    let frame = 0;
+    let last = performance.now();
+    const loop = (now: number) => {
+      frame = window.requestAnimationFrame(loop);
+      const delta = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      world.step(1 / 60, delta, 4);
+
+      for (const stone of stones) {
+        if (draggingId === stone.id) continue;
+        const state = bodies.get(stone.id);
+        if (!state) continue;
+        if (state.mode === 'falling' || state.mode === 'dragging') {
+          syncMeshFromBody(stone, state.body);
+        } else if (!gsap.isTweening(stone.mesh.position)) {
+          syncMeshFromBody(stone, state.body);
+        }
+      }
+
+      placeCamera(camera, cameraState);
+      renderer.render(scene, camera);
+    };
+    loop(performance.now());
 
     return () => {
       window.cancelAnimationFrame(frame);
-      canvas.removeEventListener('pointermove', onMove);
-      canvas.removeEventListener('click', onClick);
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerUp);
       observer.disconnect();
-      context?.revert();
       stones.forEach((stone) => {
-        gsap.killTweensOf(stone.manual);
-        gsap.killTweensOf(stone.lift);
+        gsap.killTweensOf(stone.mesh.position);
+        gsap.killTweensOf(stone.mesh.rotation);
       });
-      scroll.style.removeProperty('--landing-distance');
+      world.bodies.slice().forEach((body) => world.removeBody(body));
       pyramid.dispose();
       renderer.dispose();
       pyramidRef.current = null;
       rendererRef.current = null;
+      worldRef.current = null;
+      bodiesRef.current = new Map();
       canvas.remove();
-      window.scrollTo(0, 0);
     };
-  }, [scrollRef, reduceMotion]);
+  }, [reduceMotion]);
 
   useEffect(() => {
     const pyramid = pyramidRef.current;
@@ -189,4 +405,6 @@ export default function PyramidCanvas({ scrollRef, reduceMotion, theme }: Pyrami
   }, [theme]);
 
   return <div ref={hostRef} className="landing-canvas-host" aria-hidden="true" />;
-}
+});
+
+export default PyramidCanvas;
