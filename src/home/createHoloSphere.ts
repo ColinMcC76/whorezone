@@ -19,8 +19,6 @@ export type HoloSphereHandle = {
   camera: THREE.PerspectiveCamera;
   swarm: THREE.InstancedMesh;
   hitSphere: THREE.Mesh;
-  haze: THREE.Mesh;
-  hazeMaterial: THREE.ShaderMaterial;
   count: number;
   homes: Float32Array;
   positions: Float32Array;
@@ -29,35 +27,10 @@ export type HoloSphereHandle = {
   scales: Float32Array;
   pokes: PokeWave[];
   cameraState: { yaw: number; pitch: number; distance: number };
-  ground: THREE.MeshStandardMaterial;
   dispose: () => void;
 };
 
 const scratch = new THREE.Object3D();
-
-const hazeVertex = /* glsl */ `
-varying vec3 vNormal;
-varying vec3 vWorldPos;
-void main() {
-  vNormal = normalize(mat3(modelMatrix) * normal);
-  vec4 world = modelMatrix * vec4(position, 1.0);
-  vWorldPos = world.xyz;
-  gl_Position = projectionMatrix * viewMatrix * world;
-}
-`;
-
-const hazeFragment = /* glsl */ `
-uniform vec3 uColor;
-uniform float uOpacity;
-varying vec3 vNormal;
-varying vec3 vWorldPos;
-void main() {
-  vec3 viewDir = normalize(cameraPosition - vWorldPos);
-  float fresnel = pow(1.0 - max(dot(viewDir, normalize(vNormal)), 0.0), 3.2);
-  float body = fresnel * 0.72 + 0.01;
-  gl_FragColor = vec4(uColor, body * uOpacity);
-}
-`;
 
 function unit(index: number) {
   const value = Math.sin(index * 127.1 + 1.7) * 43758.5453;
@@ -156,35 +129,6 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   );
   scene.add(hitSphere);
 
-  const hazeMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      uColor: { value: new THREE.Color(0xffffff) },
-      uOpacity: { value: 0.55 },
-    },
-    vertexShader: hazeVertex,
-    fragmentShader: hazeFragment,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-  });
-  const haze = new THREE.Mesh(
-    new THREE.SphereGeometry(SPHERE_RADIUS * 1.18, 64, 48),
-    hazeMaterial,
-  );
-  scene.add(haze);
-
-  const groundGeometry = new THREE.CircleGeometry(14, 48);
-  const ground = new THREE.MeshStandardMaterial({
-    color: 0x111111,
-    roughness: 1,
-    metalness: 0,
-  });
-  const groundMesh = new THREE.Mesh(groundGeometry, ground);
-  groundMesh.rotation.x = -Math.PI / 2;
-  groundMesh.position.y = -SPHERE_RADIUS - 0.35;
-  scene.add(groundMesh);
-
   const pokes: PokeWave[] = [];
 
   const handle: HoloSphereHandle = {
@@ -192,8 +136,6 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
     camera,
     swarm,
     hitSphere,
-    haze,
-    hazeMaterial,
     count,
     homes,
     positions,
@@ -202,16 +144,11 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
     scales,
     pokes,
     cameraState,
-    ground,
     dispose() {
       orbGeometry.dispose();
       orbMaterial.dispose();
       hitSphere.geometry.dispose();
       (hitSphere.material as THREE.Material).dispose();
-      haze.geometry.dispose();
-      hazeMaterial.dispose();
-      groundGeometry.dispose();
-      ground.dispose();
       swarm.dispose();
     },
   };
@@ -225,7 +162,6 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
   const background = dark ? 0x0a0a0a : 0xf4f4f4;
   holo.scene.background = new THREE.Color(background);
   holo.scene.fog = new THREE.Fog(background, 14, 36);
-  holo.ground.color.setHex(dark ? 0x111111 : 0xe4e4e4);
 
   const material = holo.swarm.material as THREE.MeshStandardMaterial;
   if (dark) {
@@ -240,11 +176,6 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
     material.opacity = 0.5;
   }
   material.needsUpdate = true;
-
-  holo.hazeMaterial.uniforms.uColor.value.setHex(dark ? 0xffffff : 0x222222);
-  holo.hazeMaterial.uniforms.uOpacity.value = dark ? 0.34 : 0.14;
-  holo.hazeMaterial.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
-  holo.hazeMaterial.needsUpdate = true;
 }
 
 export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: number, strength = 1) {

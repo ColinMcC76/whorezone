@@ -11,7 +11,7 @@ import {
 } from './createHoloSphere';
 
 describe('createHoloSphere', () => {
-  it('builds a fluid swarm with haze and no shell or routes', () => {
+  it('builds a fluid orb swarm with no shell, haze, or routes', () => {
     const count = 120;
     const holo = createHoloSphere(count);
     expect(holo.swarm.count).toBe(count);
@@ -20,8 +20,9 @@ describe('createHoloSphere', () => {
     expect(holo.positions.length).toBe(count * 3);
     expect(holo.velocities.length).toBe(count * 3);
     expect(holo.hitSphere).toBeTruthy();
-    expect(holo.haze).toBeTruthy();
-    expect(holo.hazeMaterial).toBeTruthy();
+    expect(holo).not.toHaveProperty('haze');
+    expect(holo).not.toHaveProperty('hazeMaterial');
+    expect(holo).not.toHaveProperty('ground');
     expect(holo).not.toHaveProperty('shell');
     expect(holo.swarm.userData).not.toHaveProperty('route');
 
