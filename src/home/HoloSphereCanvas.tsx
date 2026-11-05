@@ -240,7 +240,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
           scratchRight.set(1, 0, 0).applyQuaternion(cameraState.orientation).normalize();
           scratchUp.set(0, 1, 0).applyQuaternion(cameraState.orientation).normalize();
           const yawDelta = -dx * 0.01;
-          const pitchDelta = dy * 0.006;
+          const pitchDelta = -dy * 0.006;
           applyAngularDelta(cameraState.orientation, scratchUp, yawDelta);
           applyAngularDelta(cameraState.orientation, scratchRight, pitchDelta);
 
