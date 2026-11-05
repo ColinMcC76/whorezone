@@ -67,6 +67,22 @@ export function chooseSwarmCount(
   return DESKTOP_SWARM_COUNT;
 }
 
+/**
+ * Camera distance that keeps the swarm framed in the shorter viewport axis.
+ * Portrait phones need a farther camera so the ball isn't clipped left/right.
+ */
+export function framedDistance(aspect: number, fovDeg: number, padding = 1.48): number {
+  const halfFov = THREE.MathUtils.degToRad(fovDeg) * 0.5;
+  const halfVisible = Math.tan(halfFov);
+  const radius = SPHERE_RADIUS * padding;
+  const fitByHeight = radius / halfVisible;
+  const fitByWidth = radius / (halfVisible * Math.max(aspect, 0.05));
+  return Math.max(fitByHeight, fitByWidth);
+}
+
+export const MIN_ZOOM_FACTOR = 0.55;
+export const MAX_ZOOM_FACTOR = 2.35;
+
 export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a0a);
