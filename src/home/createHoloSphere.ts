@@ -14,6 +14,12 @@ export type PokeWave = {
   strength: number;
 };
 
+export type HoverField = {
+  active: boolean;
+  dir: THREE.Vector3;
+  strength: number;
+};
+
 export type HoloSphereHandle = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
@@ -26,6 +32,7 @@ export type HoloSphereHandle = {
   phases: Float32Array;
   scales: Float32Array;
   pokes: PokeWave[];
+  hover: HoverField;
   cameraState: { yaw: number; pitch: number; distance: number };
   dispose: () => void;
 };
@@ -130,6 +137,11 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   scene.add(hitSphere);
 
   const pokes: PokeWave[] = [];
+  const hover: HoverField = {
+    active: false,
+    dir: new THREE.Vector3(0, 1, 0),
+    strength: 0,
+  };
 
   const handle: HoloSphereHandle = {
     scene,
@@ -143,6 +155,7 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
     phases,
     scales,
     pokes,
+    hover,
     cameraState,
     dispose() {
       orbGeometry.dispose();
@@ -183,14 +196,28 @@ export function pushPoke(holo: HoloSphereHandle, point: THREE.Vector3, time: num
   if (holo.pokes.length > MAX_POKES) holo.pokes.length = MAX_POKES;
 }
 
+/** Soft cursor field over the sphere surface. Strength lerps so it eases in/out. */
+export function setHover(holo: HoloSphereHandle, point: THREE.Vector3 | null) {
+  if (!point) {
+    holo.hover.active = false;
+    return;
+  }
+  holo.hover.active = true;
+  holo.hover.dir.copy(point).normalize();
+}
+
 export function stepSwarm(
   holo: HoloSphereHandle,
   time: number,
   delta: number,
   reduceMotion: boolean,
 ) {
-  const { count, homes, positions, velocities, phases, scales, pokes, swarm } = holo;
+  const { count, homes, positions, velocities, phases, scales, pokes, hover, swarm } = holo;
   const dt = Math.min(delta, 0.033);
+
+  const hoverTarget = !reduceMotion && hover.active ? 1 : 0;
+  hover.strength += (hoverTarget - hover.strength) * Math.min(1, dt * 10);
+  if (hover.strength < 0.001) hover.strength = 0;
 
   for (let i = 0; i < count; i += 1) {
     const ix = i * 3;
@@ -258,8 +285,28 @@ export function stepSwarm(
         vz += (nx * poke.dir.y - ny * poke.dir.x) * wave * 2.2 * dt;
       }
 
+      // Hover: part orbs around the cursor and give them a soft shimmer.
+      let hoverInfluence = 0;
+      if (hover.strength > 0) {
+        const hDot = nx * hover.dir.x + ny * hover.dir.y + nz * hover.dir.z;
+        hoverInfluence = Math.exp(-Math.pow(Math.max(0, 1 - hDot) * 7.5, 2)) * hover.strength;
+        if (hoverInfluence > 0.002) {
+          // Radial push away from the surface under the cursor.
+          vx += nx * hoverInfluence * 5.5 * dt;
+          vy += ny * hoverInfluence * 5.5 * dt;
+          vz += nz * hoverInfluence * 5.5 * dt;
+          // Tangential scatter so the patch opens like a soft wake.
+          const sx = ny * hover.dir.z - nz * hover.dir.y;
+          const sy = nz * hover.dir.x - nx * hover.dir.z;
+          const sz = nx * hover.dir.y - ny * hover.dir.x;
+          vx += sx * hoverInfluence * 3.2 * dt;
+          vy += sy * hoverInfluence * 3.2 * dt;
+          vz += sz * hoverInfluence * 3.2 * dt;
+        }
+      }
+
       // High-frequency shudder (velocity jitter, not hard offset).
-      const shudder = 0.28 + ripple * 0.55;
+      const shudder = 0.28 + ripple * 0.55 + hoverInfluence * 1.4;
       vx += Math.sin(time * 22 + phase) * shudder * dt;
       vy += Math.cos(time * 19 + phase * 1.2) * shudder * dt;
       vz += Math.sin(time * 24 + phase * 0.6) * shudder * dt;
@@ -293,7 +340,7 @@ export function stepSwarm(
         z *= s;
       }
 
-      scale *= breath * (1 + ripple * 0.14);
+      scale *= breath * (1 + ripple * 0.14 + hoverInfluence * 0.35);
     }
 
     positions[ix] = x;
