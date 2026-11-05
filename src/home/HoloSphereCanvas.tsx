@@ -9,6 +9,7 @@ import {
   createHoloSphere,
   paintHoloSphere,
   pushPoke,
+  setHover,
   stepSwarm,
   type HoloSphereHandle,
   type SiteTheme,
@@ -145,6 +146,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         if (!moved && Math.abs(dx) + Math.abs(dy) > 3) {
           moved = true;
           orbiting = true;
+          setHover(holo, null);
         }
         if (orbiting) {
           // Drag anywhere — including on the sphere — orbits the view.
@@ -155,7 +157,18 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         return;
       }
 
-      canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
+      const hit = hitBall(event);
+      if (hit && !reduceMotionRef.current) {
+        setHover(holo, hit.point);
+        canvas.style.cursor = 'pointer';
+      } else {
+        setHover(holo, null);
+        canvas.style.cursor = 'grab';
+      }
+    };
+
+    const onPointerLeave = () => {
+      if (!pointerDown) setHover(holo, null);
     };
 
     const onPointerUp = (event: PointerEvent) => {
@@ -168,7 +181,14 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
 
       orbiting = false;
       pointerDown = false;
-      canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
+      const hit = hitBall(event);
+      if (hit && !reduceMotionRef.current) {
+        setHover(holo, hit.point);
+        canvas.style.cursor = 'pointer';
+      } else {
+        setHover(holo, null);
+        canvas.style.cursor = 'grab';
+      }
       if (canvas.hasPointerCapture(event.pointerId)) {
         canvas.releasePointerCapture(event.pointerId);
       }
@@ -178,6 +198,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerUp);
+    canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.style.cursor = 'grab';
     canvas.style.touchAction = 'none';
 
@@ -203,6 +224,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
       observer.disconnect();
       holo.dispose();
       composer.dispose();

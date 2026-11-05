@@ -7,6 +7,7 @@ import {
   chooseSwarmCount,
   createHoloSphere,
   pushPoke,
+  setHover,
   stepSwarm,
 } from './createHoloSphere';
 
@@ -36,6 +37,13 @@ describe('createHoloSphere', () => {
     stepSwarm(holo, 0.5, 0.016, true);
     expect(holo.positions[0]).toBeCloseTo(holo.homes[0], 5);
     expect(holo.velocities[0]).toBe(0);
+
+    setHover(holo, new THREE.Vector3(0, SPHERE_RADIUS, 0));
+    expect(holo.hover.active).toBe(true);
+    for (let i = 0; i < 8; i += 1) stepSwarm(holo, 0.6 + i * 0.016, 0.016, false);
+    expect(holo.hover.strength).toBeGreaterThan(0.2);
+    setHover(holo, null);
+    expect(holo.hover.active).toBe(false);
 
     holo.dispose();
   });
