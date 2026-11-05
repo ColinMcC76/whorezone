@@ -479,6 +479,65 @@ select {
   border-left: 1px solid var(--border);
 }
 
+.resume-role + .resume-role {
+  margin-top: 2rem;
+}
+
+.resume-role-header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
+}
+
+.resume-role-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.resume-role-org {
+  margin: 0;
+  color: var(--muted);
+}
+
+.resume-sublist {
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.resume-sublist li {
+  padding-left: 0.85rem;
+  border-left: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--muted);
+  font-size: 0.95em;
+}
+
+.resume-credentials {
+  display: grid;
+  gap: 2rem;
+}
+
+.resume-skill-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.75rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  max-width: 58ch;
+}
+
+.resume-skill-list li {
+  margin: 0;
+  padding: 0.2rem 0;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
 .contact-email {
   margin-top: 1.5rem;
 }
