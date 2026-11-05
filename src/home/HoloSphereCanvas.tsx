@@ -171,6 +171,13 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       if (!pointerDown) setHover(holo, null);
     };
 
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const zoom = Math.exp(event.deltaY * 0.00115);
+      cameraState.distance = THREE.MathUtils.clamp(cameraState.distance * zoom, 4.2, 16);
+      placeCamera(camera, cameraState);
+    };
+
     const onPointerUp = (event: PointerEvent) => {
       if (pointerDown && !moved && !reduceMotionRef.current) {
         const hit = hitBall(event);
@@ -199,6 +206,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.style.cursor = 'grab';
     canvas.style.touchAction = 'none';
 
@@ -225,6 +233,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('wheel', onWheel);
       observer.disconnect();
       holo.dispose();
       composer.dispose();
