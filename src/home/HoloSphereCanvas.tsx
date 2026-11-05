@@ -5,8 +5,11 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {
+  MAX_ZOOM_FACTOR,
+  MIN_ZOOM_FACTOR,
   chooseSwarmCount,
   createHoloSphere,
+  framedDistance,
   paintHoloSphere,
   pushPoke,
   setHover,
@@ -88,6 +91,14 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     composer.addPass(bloomPass);
     composer.addPass(new OutputPass());
 
+    let fitDistance = framedDistance(1, camera.fov);
+    let zoomFactor = 1;
+
+    const applyFramedCamera = () => {
+      cameraState.distance = fitDistance * zoomFactor;
+      placeCamera(camera, cameraState);
+    };
+
     const resize = () => {
       const width = host.clientWidth || 1;
       const height = host.clientHeight || window.innerHeight || 1;
@@ -95,10 +106,13 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
       composer.setSize(width, height);
       bloomPass.resolution.set(width, height);
       camera.aspect = width / height;
+      // Narrow/tall phones need a wider FOV so the ball still reads large without clipping.
+      camera.fov = width / height < 0.72 ? 46 : 38;
       camera.updateProjectionMatrix();
+      fitDistance = framedDistance(camera.aspect, camera.fov);
+      applyFramedCamera();
     };
     resize();
-    placeCamera(camera, cameraState);
     stepSwarm(holo, 0, 0, reduceMotionRef.current);
 
     const raycaster = new THREE.Raycaster();
@@ -173,9 +187,12 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
 
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      const zoom = Math.exp(event.deltaY * 0.00115);
-      cameraState.distance = THREE.MathUtils.clamp(cameraState.distance * zoom, 4.2, 16);
-      placeCamera(camera, cameraState);
+      zoomFactor = THREE.MathUtils.clamp(
+        zoomFactor * Math.exp(event.deltaY * 0.00115),
+        MIN_ZOOM_FACTOR,
+        MAX_ZOOM_FACTOR,
+      );
+      applyFramedCamera();
     };
 
     const onPointerUp = (event: PointerEvent) => {

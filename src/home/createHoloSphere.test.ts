@@ -6,6 +6,7 @@ import {
   SPHERE_RADIUS,
   chooseSwarmCount,
   createHoloSphere,
+  framedDistance,
   pushPoke,
   setHover,
   stepSwarm,
@@ -53,5 +54,12 @@ describe('createHoloSphere', () => {
     expect(chooseSwarmCount(390, false, 8)).toBe(MOBILE_SWARM_COUNT);
     expect(chooseSwarmCount(1280, true, 8)).toBe(MOBILE_SWARM_COUNT);
     expect(chooseSwarmCount(1280, false, 4)).toBe(MOBILE_SWARM_COUNT);
+  });
+
+  it('frames the camera farther on portrait phone aspects', () => {
+    const desktop = framedDistance(16 / 9, 38);
+    const phone = framedDistance(390 / 844, 46);
+    expect(phone).toBeGreaterThan(desktop);
+    expect(phone).toBeGreaterThan(SPHERE_RADIUS * 2);
   });
 });
