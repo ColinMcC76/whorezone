@@ -74,7 +74,12 @@ export default function Projects() {
         lead="Public repositories from GitHub, refreshed whenever the site builds."
       />
 
-      <Chapter id="projects-repos" eyebrow="GitHub" title="Repositories">
+      <Chapter
+        id="projects-repos"
+        className="chapter-wide"
+        eyebrow="GitHub"
+        title="Repositories"
+      >
         {status === 'loading' ? <p className="meta">Loading repositories…</p> : null}
         {status === 'error' ? (
           <p className="meta">
