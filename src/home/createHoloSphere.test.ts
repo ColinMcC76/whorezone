@@ -1,24 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
-  PARTICLE_COUNT,
+  SWARM_COUNT,
   SPHERE_RADIUS,
   createHoloSphere,
   pushPoke,
-  syncPokeUniforms,
+  stepSwarm,
 } from './createHoloSphere';
 
 describe('createHoloSphere', () => {
-  it('builds a shell and interior particles with no route tags', () => {
+  it('builds a swarm of glowing spheres with no shell or routes', () => {
     const holo = createHoloSphere();
-    expect(holo.shell).toBeTruthy();
-    expect(holo.particles).toBeTruthy();
-    expect(holo.particlePositions.length).toBe(PARTICLE_COUNT * 3);
-    expect(holo.shell.userData).not.toHaveProperty('route');
+    expect(holo.swarm.count).toBe(SWARM_COUNT);
+    expect(holo.homes.length).toBe(SWARM_COUNT * 3);
+    expect(holo.hitSphere).toBeTruthy();
+    expect(holo).not.toHaveProperty('shell');
+    expect(holo.swarm.userData).not.toHaveProperty('route');
 
     pushPoke(holo, new THREE.Vector3(0, SPHERE_RADIUS, 0), 0.2, 1);
-    syncPokeUniforms(holo, 0.2, false);
     expect(holo.pokes.length).toBe(1);
+    stepSwarm(holo, 0.35, 0.016, false);
 
     holo.dispose();
   });
