@@ -127,47 +127,38 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
       pointerDown = true;
+      orbiting = false;
       moved = false;
       lastX = event.clientX;
       lastY = event.clientY;
-      const hit = hitBall(event);
-      if (!hit) {
-        orbiting = true;
-        canvas.setPointerCapture(event.pointerId);
-        canvas.style.cursor = 'grabbing';
-      }
+      canvas.setPointerCapture(event.pointerId);
+      canvas.style.cursor = 'grabbing';
     };
 
     const onPointerMove = (event: PointerEvent) => {
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
-      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
       lastX = event.clientX;
       lastY = event.clientY;
 
-      if (orbiting) {
-        cameraState.yaw -= dx * 0.01;
-        cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + dy * 0.006, -0.85, 1.1);
-        placeCamera(camera, cameraState);
-        return;
-      }
-
-      if (!pointerDown) {
-        canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
-      }
-    };
-
-    const onPointerUp = (event: PointerEvent) => {
-      if (orbiting) {
-        orbiting = false;
-        pointerDown = false;
-        canvas.style.cursor = 'grab';
-        if (canvas.hasPointerCapture(event.pointerId)) {
-          canvas.releasePointerCapture(event.pointerId);
+      if (pointerDown) {
+        if (!moved && Math.abs(dx) + Math.abs(dy) > 3) {
+          moved = true;
+          orbiting = true;
+        }
+        if (orbiting) {
+          // Drag anywhere — including on the sphere — orbits the view.
+          cameraState.yaw -= dx * 0.01;
+          cameraState.pitch = THREE.MathUtils.clamp(cameraState.pitch + dy * 0.006, -0.85, 1.1);
+          placeCamera(camera, cameraState);
         }
         return;
       }
 
+      canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
       if (pointerDown && !moved && !reduceMotionRef.current) {
         const hit = hitBall(event);
         if (hit) {
@@ -175,6 +166,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
         }
       }
 
+      orbiting = false;
       pointerDown = false;
       canvas.style.cursor = hitBall(event) ? 'pointer' : 'grab';
       if (canvas.hasPointerCapture(event.pointerId)) {
