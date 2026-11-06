@@ -24,9 +24,6 @@ export default function Footer() {
             <a href={siteConfig.socials.linkedin} target="_blank" rel="noopener noreferrer">
               LinkedIn
             </a>
-            <a href={siteConfig.socials.instagram} target="_blank" rel="noopener noreferrer">
-              Instagram
-            </a>
           </div>
           <p className="site-closing-copy">
             © {year} {siteConfig.name}

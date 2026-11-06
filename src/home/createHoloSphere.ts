@@ -33,7 +33,7 @@ export type HoloSphereHandle = {
   scales: Float32Array;
   pokes: PokeWave[];
   hover: HoverField;
-  cameraState: { yaw: number; pitch: number; distance: number };
+  cameraState: { distance: number; orientation: THREE.Quaternion };
   dispose: () => void;
 };
 
@@ -89,7 +89,16 @@ export function createHoloSphere(count = chooseSwarmCount()): HoloSphereHandle {
   scene.fog = new THREE.Fog(0x0a0a0a, 14, 36);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
-  const cameraState = { yaw: 0.55, pitch: 0.28, distance: 8.4 };
+  // Seed a slightly elevated view; trackball orientation replaces yaw/pitch clamps.
+  const seedDir = new THREE.Vector3(
+    Math.sin(0.55) * Math.cos(0.28),
+    Math.sin(0.28),
+    Math.cos(0.55) * Math.cos(0.28),
+  ).normalize();
+  const cameraState = {
+    distance: 8.4,
+    orientation: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), seedDir),
+  };
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   const key = new THREE.DirectionalLight(0xffffff, 1.15);
@@ -198,11 +207,14 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
     material.emissive.setHex(0xffffff);
     material.emissiveIntensity = 0.72;
     material.opacity = 0.78;
+    material.roughness = 0.32;
   } else {
-    material.color.setHex(0x1f1f1f);
-    material.emissive.setHex(0x111111);
-    material.emissiveIntensity = 0.24;
-    material.opacity = 0.5;
+    // Near-black dense orbs for a black-hole read on white.
+    material.color.setHex(0x050505);
+    material.emissive.setHex(0x0a0a0a);
+    material.emissiveIntensity = 0.08;
+    material.opacity = 0.92;
+    material.roughness = 0.55;
   }
   material.needsUpdate = true;
 }

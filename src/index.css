@@ -38,6 +38,11 @@ body {
   min-height: 100vh;
 }
 
+/* Keep a solid fallback under the fixed hologram while content sits in frosted plates. */
+.app-shell {
+  background: transparent;
+}
+
 a {
   color: var(--accent-soft);
 }
@@ -50,10 +55,11 @@ a {
 .navbar {
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   border-bottom: 1px solid var(--border);
   z-index: 30;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .navbar-inner {
@@ -198,14 +204,36 @@ button {
 }
 
 .project-grid {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .project-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.chapter.chapter-wide .chapter-inner {
+  width: min(1120px, 92%);
+}
+
+.chapter.chapter-wide .chapter-body {
+  max-width: none;
 }
 
 .card {
-  background: var(--bg-elev);
+  background: color-mix(in srgb, var(--bg-elev) 82%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .card-title {
@@ -215,6 +243,41 @@ button {
 
 .card-content {
   color: var(--muted);
+}
+
+.repo-card {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+}
+
+.repo-card .card-title {
+  margin-bottom: 0;
+}
+
+.repo-card .card-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.repo-card .card-title a:hover,
+.repo-card .card-title a:focus-visible {
+  text-decoration: underline;
+}
+
+.repo-card .card-content {
+  margin: 0;
+}
+
+.repo-card-meta {
+  margin: 0;
+}
+
+.repo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
 }
 
 .stack {
@@ -312,6 +375,7 @@ select {
 .page-cinematic {
   position: relative;
   min-height: 60vh;
+  background: transparent;
 }
 
 .page-rail {
@@ -332,6 +396,7 @@ select {
   text-transform: uppercase;
   font-size: 0.7rem;
   color: var(--muted);
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--bg) 85%, transparent);
 }
 
 .page-index {
@@ -352,6 +417,7 @@ select {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 0.65rem;
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--bg) 85%, transparent);
 }
 
 .page-index a.is-active,
@@ -379,6 +445,12 @@ select {
 .chapter-inner {
   width: min(920px, 78%);
   margin-inline: auto;
+  padding: 1.35rem 1.4rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .chapter-compact .chapter-inner,
@@ -542,11 +614,21 @@ select {
   margin-top: 1.5rem;
 }
 
+.contact-pay-actions {
+  margin-top: 1.75rem;
+}
+
+.contact-pay-note {
+  margin-top: 0.85rem;
+}
+
 .site-closing {
   margin-top: 0;
   border-top: 1px solid var(--border);
   padding: 4rem 0 3rem;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .site-closing-inner {
@@ -554,6 +636,10 @@ select {
   margin-inline: auto;
   display: grid;
   gap: 1.5rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
 }
 
 .site-closing-label {
