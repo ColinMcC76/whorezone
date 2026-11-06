@@ -19,6 +19,7 @@ import {
 } from './createHoloSphere';
 
 type HoloSphereCanvasProps = {
+  interactive?: boolean;
   reduceMotion: boolean;
   theme: SiteTheme;
 };
@@ -98,15 +99,21 @@ function applyAngularDelta(
   orientation.premultiply(scratchQuat).normalize();
 }
 
-export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanvasProps) {
+export default function HoloSphereCanvas({
+  interactive = true,
+  reduceMotion,
+  theme,
+}: HoloSphereCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const holoRef = useRef<HoloSphereHandle | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const bloomRef = useRef<UnrealBloomPass | null>(null);
   const themeRef = useRef(theme);
   const reduceMotionRef = useRef(reduceMotion);
+  const interactiveRef = useRef(interactive);
   themeRef.current = theme;
   reduceMotionRef.current = reduceMotion;
+  interactiveRef.current = interactive;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -204,7 +211,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
+      if (!interactiveRef.current || event.button !== 0) return;
       pointerDown = true;
       orbiting = false;
       moved = false;
@@ -218,6 +225,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      if (!interactiveRef.current) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
       lastX = event.clientX;
@@ -270,10 +278,12 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     };
 
     const onPointerLeave = () => {
+      if (!interactiveRef.current) return;
       if (!pointerDown) setHover(holo, null);
     };
 
     const onWheel = (event: WheelEvent) => {
+      if (!interactiveRef.current) return;
       event.preventDefault();
       zoomFactor = THREE.MathUtils.clamp(
         zoomFactor * Math.exp(event.deltaY * 0.00115),
@@ -284,6 +294,7 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     };
 
     const onPointerUp = (event: PointerEvent) => {
+      if (!interactiveRef.current) return;
       if (pointerDown && !moved && !reduceMotionRef.current) {
         const hit = hitBall(event);
         if (hit) {
@@ -388,5 +399,27 @@ export default function HoloSphereCanvas({ reduceMotion, theme }: HoloSphereCanv
     }
   }, [theme, reduceMotion]);
 
-  return <div ref={hostRef} className="landing-canvas-host" aria-hidden="true" />;
+  useEffect(() => {
+    const host = hostRef.current;
+    const holo = holoRef.current;
+    if (host) {
+      host.style.pointerEvents = interactive ? 'auto' : 'none';
+      const canvas = host.querySelector('canvas');
+      if (canvas instanceof HTMLCanvasElement) {
+        canvas.style.pointerEvents = interactive ? 'auto' : 'none';
+        canvas.style.cursor = interactive ? 'grab' : 'default';
+        canvas.style.touchAction = interactive ? 'none' : 'auto';
+      }
+    }
+    if (!interactive && holo) setHover(holo, null);
+  }, [interactive]);
+
+  return (
+    <div
+      ref={hostRef}
+      className="landing-canvas-host"
+      aria-hidden="true"
+      style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+    />
+  );
 }

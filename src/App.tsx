@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Footer from './components/Footer';
 import NavBar from './components/NavBar';
 import ProtectedRoute from './components/ProtectedRoute';
+import HoloSphereCanvas from './home/HoloSphereCanvas';
 import AdminBlog from './pages/AdminBlog';
 import Account from './pages/Account';
 import AuthCallback from './pages/AuthCallback';
@@ -16,9 +17,25 @@ import Projects from './pages/Projects';
 import Resume from './pages/Resume';
 import { authApi } from './lib/api';
 import type { User } from './lib/types';
+import { useTheme } from './theme/ThemeProvider';
+import './home/landing.css';
 
 const tokenStorageKey = 'personal-site-token';
 const userStorageKey = 'personal-site-user';
+const motionQuery = '(prefers-reduced-motion: reduce)';
+
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(() => window.matchMedia(motionQuery).matches);
+
+  useEffect(() => {
+    const media = window.matchMedia(motionQuery);
+    const onChange = () => setReduce(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  return reduce;
+}
 
 function readStoredUser(): User | null {
   const raw = localStorage.getItem(userStorageKey);
@@ -42,6 +59,8 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const { theme } = useTheme();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -106,62 +125,70 @@ function AppRoutes() {
 
   return (
     <div className={isLanding ? 'app-shell app-shell-landing' : 'app-shell'}>
-      {isLanding ? null : <NavBar user={user} onLogout={authHandlers.logout} />}
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/blog" element={<BlogList />} />
-          <Route path="/blog/:slug" element={<BlogDetail />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/resume" element={<Resume />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route
-            path="/login"
-            element={
-              token ? (
-                <Navigate to={user?.role === 'admin' ? '/admin/blog' : '/account'} replace />
-              ) : (
-                <Login onAuthSuccess={onAuthSuccess} />
-              )
-            }
-          />
-          <Route path="/auth/callback" element={<AuthCallback onAuthSuccess={onAuthSuccess} />} />
-          <Route
-            path="/account"
-            element={
-              <ProtectedRoute token={token} user={user}>
-                {token && user ? (
-                  <Account
-                    token={token}
-                    user={user}
-                    onUserUpdate={(u) => {
-                      setUser(u);
-                      localStorage.setItem(userStorageKey, JSON.stringify(u));
-                    }}
-                    onTokenUpdate={(t) => {
-                      localStorage.setItem(tokenStorageKey, t);
-                      setToken(t);
-                    }}
-                    onLogout={authHandlers.logout}
-                  />
+      <div
+        className={isLanding ? 'site-holo-bg site-holo-bg-interactive' : 'site-holo-bg'}
+        aria-hidden="true"
+      >
+        <HoloSphereCanvas interactive={isLanding} reduceMotion={reduceMotion} theme={theme} />
+      </div>
+      <div className="app-foreground">
+        {isLanding ? null : <NavBar user={user} onLogout={authHandlers.logout} />}
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/blog" element={<BlogList />} />
+            <Route path="/blog/:slug" element={<BlogDetail />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/resume" element={<Resume />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route
+              path="/login"
+              element={
+                token ? (
+                  <Navigate to={user?.role === 'admin' ? '/admin/blog' : '/account'} replace />
                 ) : (
-                  <Navigate to="/login" replace />
-                )}
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/blog"
-            element={
-              <ProtectedRoute token={token} user={user} requireAdmin>
-                <AdminBlog token={token ?? ''} onAuthError={authHandlers.logout} />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      {isLanding ? null : <Footer />}
+                  <Login onAuthSuccess={onAuthSuccess} />
+                )
+              }
+            />
+            <Route path="/auth/callback" element={<AuthCallback onAuthSuccess={onAuthSuccess} />} />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute token={token} user={user}>
+                  {token && user ? (
+                    <Account
+                      token={token}
+                      user={user}
+                      onUserUpdate={(u) => {
+                        setUser(u);
+                        localStorage.setItem(userStorageKey, JSON.stringify(u));
+                      }}
+                      onTokenUpdate={(t) => {
+                        localStorage.setItem(tokenStorageKey, t);
+                        setToken(t);
+                      }}
+                      onLogout={authHandlers.logout}
+                    />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )}
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/blog"
+              element={
+                <ProtectedRoute token={token} user={user} requireAdmin>
+                  <AdminBlog token={token ?? ''} onAuthError={authHandlers.logout} />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+        {isLanding ? null : <Footer />}
+      </div>
     </div>
   );
 }
