@@ -5,7 +5,7 @@
     "html_url": "https://github.com/ColinMcC76/whorezone",
     "language": "JavaScript",
     "stargazers_count": 0,
-    "pushed_at": "2026-11-06T02:16:23Z",
+    "pushed_at": "2026-11-06T03:06:08Z",
     "homepage": "https://whorezone.vercel.app"
   },
   {
@@ -18,33 +18,6 @@
     "homepage": null
   },
   {
-    "name": "intro-react",
-    "description": "A robot powered training repository :robot:",
-    "html_url": "https://github.com/ColinMcC76/intro-react",
-    "language": "JavaScript",
-    "stargazers_count": 0,
-    "pushed_at": "2026-02-13T19:57:29Z",
-    "homepage": "https://lab.github.com/githubtraining/introduction-to-react"
-  },
-  {
-    "name": "bootcampExamples",
-    "description": null,
-    "html_url": "https://github.com/ColinMcC76/bootcampExamples",
-    "language": "JavaScript",
-    "stargazers_count": 0,
-    "pushed_at": "2026-02-13T19:54:23Z",
-    "homepage": null
-  },
-  {
-    "name": "my-app",
-    "description": null,
-    "html_url": "https://github.com/ColinMcC76/my-app",
-    "language": "JavaScript",
-    "stargazers_count": 0,
-    "pushed_at": "2026-02-13T19:51:38Z",
-    "homepage": null
-  },
-  {
     "name": "shabbotV2",
     "description": "Discord bot for whorezone, AI chat functionality ",
     "html_url": "https://github.com/ColinMcC76/shabbotV2",
@@ -52,5 +25,293 @@
     "stargazers_count": 0,
     "pushed_at": "2026-01-16T02:24:09Z",
     "homepage": null
+  },
+  {
+    "name": "Shabbot",
+    "description": "AI Discord Bot ",
+    "html_url": "https://github.com/ColinMcC76/Shabbot",
+    "language": "Python",
+    "stargazers_count": 0,
+    "pushed_at": "2025-10-10T22:27:54Z",
+    "homepage": null
+  },
+  {
+    "name": "SiteofShabbot",
+    "description": "website to access shabbot backend. ",
+    "html_url": "https://github.com/ColinMcC76/SiteofShabbot",
+    "language": "Python",
+    "stargazers_count": 0,
+    "pushed_at": "2025-08-30T18:14:55Z",
+    "homepage": null
+  },
+  {
+    "name": "missionForm",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/missionForm",
+    "language": null,
+    "stargazers_count": 0,
+    "pushed_at": "2023-10-26T06:43:58Z",
+    "homepage": null
+  },
+  {
+    "name": "songscraper",
+    "description": "spotify -> youtube -> mp3-> your music directory",
+    "html_url": "https://github.com/ColinMcC76/songscraper",
+    "language": "Python",
+    "stargazers_count": 0,
+    "pushed_at": "2023-10-24T17:12:20Z",
+    "homepage": null
+  },
+  {
+    "name": "sudoku",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/sudoku",
+    "language": "Python",
+    "stargazers_count": 0,
+    "pushed_at": "2023-10-18T01:57:42Z",
+    "homepage": null
+  },
+  {
+    "name": "SlotMachine",
+    "description": "python slot machine to get comfortable with python. ",
+    "html_url": "https://github.com/ColinMcC76/SlotMachine",
+    "language": "Python",
+    "stargazers_count": 0,
+    "pushed_at": "2023-10-15T05:51:01Z",
+    "homepage": null
+  },
+  {
+    "name": "book_checkout",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/book_checkout",
+    "language": "PHP",
+    "stargazers_count": 0,
+    "pushed_at": "2023-01-06T18:28:36Z",
+    "homepage": null
+  },
+  {
+    "name": "diddit_api",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/diddit_api",
+    "language": "PHP",
+    "stargazers_count": 0,
+    "pushed_at": "2023-01-06T04:45:39Z",
+    "homepage": null
+  },
+  {
+    "name": "diddit_react",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/diddit_react",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2021-01-06T02:05:30Z",
+    "homepage": null
+  },
+  {
+    "name": "n_cov_19_tracker",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/n_cov_19_tracker",
+    "language": "Dart",
+    "stargazers_count": 0,
+    "pushed_at": "2020-11-11T01:25:11Z",
+    "homepage": null
+  },
+  {
+    "name": "flutterWeatherApp",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/flutterWeatherApp",
+    "language": "Dart",
+    "stargazers_count": 0,
+    "pushed_at": "2020-10-20T18:00:56Z",
+    "homepage": null
+  },
+  {
+    "name": "bookClub",
+    "description": "An app designed to help readers keep track of books they are reading. ",
+    "html_url": "https://github.com/ColinMcC76/bookClub",
+    "language": "Dart",
+    "stargazers_count": 0,
+    "pushed_at": "2020-10-13T16:03:27Z",
+    "homepage": null
+  },
+  {
+    "name": "FlutterChatApp",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/FlutterChatApp",
+    "language": "Dart",
+    "stargazers_count": 0,
+    "pushed_at": "2020-09-30T16:29:23Z",
+    "homepage": null
+  },
+  {
+    "name": "Startup_Name_Generator",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/Startup_Name_Generator",
+    "language": "Dart",
+    "stargazers_count": 0,
+    "pushed_at": "2020-09-14T03:41:53Z",
+    "homepage": null
+  },
+  {
+    "name": "react-calc",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/react-calc",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-08-14T00:12:54Z",
+    "homepage": null
+  },
+  {
+    "name": "react-clock",
+    "description": "A react based clock that tells you exactly what time it is, at your location. ",
+    "html_url": "https://github.com/ColinMcC76/react-clock",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-08-11T15:14:20Z",
+    "homepage": "https://react-clock-eefd8.web.app/"
+  },
+  {
+    "name": "sql_heroes",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/sql_heroes",
+    "language": "PHP",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T13:24:47Z",
+    "homepage": null
+  },
+  {
+    "name": "slide-puzzle",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/slide-puzzle",
+    "language": "HTML",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T13:19:24Z",
+    "homepage": "https://colinmcc76.github.io/slide-puzzle/"
+  },
+  {
+    "name": "restaurantMenu",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/restaurantMenu",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T13:13:41Z",
+    "homepage": "https://colinmcc76.github.io/restaurantMenu/"
+  },
+  {
+    "name": "to-do-list",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/to-do-list",
+    "language": "HTML",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T13:00:53Z",
+    "homepage": "https://colinmcc76.github.io/to-do-list/"
+  },
+  {
+    "name": "ticTacToe",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/ticTacToe",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:57:56Z",
+    "homepage": "https://colinmcc76.github.io/ticTacToe/"
+  },
+  {
+    "name": "calculator",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/calculator",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:56:34Z",
+    "homepage": "https://colinmcc76.github.io/calculator/"
+  },
+  {
+    "name": "weatherApp",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/weatherApp",
+    "language": "HTML",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:54:17Z",
+    "homepage": "https://colinmcc76.github.io/weatherApp/"
+  },
+  {
+    "name": "balls",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/balls",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:52:13Z",
+    "homepage": "https://colinmcc76.github.io/balls/"
+  },
+  {
+    "name": "constable",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/constable",
+    "language": "HTML",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:48:56Z",
+    "homepage": "https://colinmcc76.github.io/constable/"
+  },
+  {
+    "name": "clock",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/clock",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:45:53Z",
+    "homepage": "https://colinmcc76.github.io/clock/"
+  },
+  {
+    "name": "countdownTimer",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/countdownTimer",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:42:37Z",
+    "homepage": "https://colinmcc76.github.io/countdownTimer/"
+  },
+  {
+    "name": "mindReader",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/mindReader",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T12:40:02Z",
+    "homepage": "https://colinmcc76.github.io/mindReader/"
+  },
+  {
+    "name": "sillyStory",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/sillyStory",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-07-03T11:02:17Z",
+    "homepage": "https://colinmcc76.github.io/sillyStory/"
+  },
+  {
+    "name": "diddit_laravel",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/diddit_laravel",
+    "language": null,
+    "stargazers_count": 0,
+    "pushed_at": "2020-05-01T16:07:22Z",
+    "homepage": null
+  },
+  {
+    "name": "ColinMcC76.GitHub.io",
+    "description": "ColinMcC76.GitHub.io",
+    "html_url": "https://github.com/ColinMcC76/ColinMcC76.GitHub.io",
+    "language": "HTML",
+    "stargazers_count": 0,
+    "pushed_at": "2020-03-16T15:56:36Z",
+    "homepage": "https://colinmcc76.github.io/"
+  },
+  {
+    "name": "imgGallery",
+    "description": null,
+    "html_url": "https://github.com/ColinMcC76/imgGallery",
+    "language": "JavaScript",
+    "stargazers_count": 0,
+    "pushed_at": "2020-02-21T14:59:13Z",
+    "homepage": "https://colinmcc76.github.io/imgGallery/"
   }
 ]

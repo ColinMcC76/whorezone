@@ -1,10 +1,45 @@
-import { writeFile, readFile, access } from 'node:fs/promises';
+import { writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const USERNAME = 'ColinMcC76';
-const LIMIT = 12;
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+const ALLOWED_REPOS = new Set([
+  'Shabbot',
+  'SiteofShabbot',
+  'missionForm',
+  'songscraper',
+  'sudoku',
+  'SlotMachine',
+  'book_checkout',
+  'diddit_api',
+  'diddit_react',
+  'n_cov_19_tracker',
+  'flutterWeatherApp',
+  'bookClub',
+  'FlutterChatApp',
+  'Startup_Name_Generator',
+  'react-calc',
+  'react-clock',
+  'sql_heroes',
+  'slide-puzzle',
+  'restaurantMenu',
+  'to-do-list',
+  'ticTacToe',
+  'calculator',
+  'weatherApp',
+  'balls',
+  'constable',
+  'clock',
+  'countdownTimer',
+  'mindReader',
+  'sillyStory',
+  'diddit_laravel',
+  'ColinMcC76.GitHub.io',
+  'imgGallery',
+  'whorezone',
+  'GrokSlop',
+  'shabbotV2',
+]);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_FILE = path.resolve(__dirname, '../public/github-repos.json');
 
@@ -60,19 +95,13 @@ async function main() {
     return;
   }
 
-  const cutoff = Date.now() - ONE_YEAR_MS;
   const cards = repos
-    .filter((repo) => {
-      if (repo.fork || repo.archived) return false;
-      const pushed = Date.parse(String(repo.pushed_at ?? '')) || 0;
-      return pushed >= cutoff;
-    })
+    .filter((repo) => ALLOWED_REPOS.has(String(repo.name ?? '')))
     .sort((a, b) => {
       const aTime = Date.parse(String(a.pushed_at ?? '')) || 0;
       const bTime = Date.parse(String(b.pushed_at ?? '')) || 0;
       return bTime - aTime;
     })
-    .slice(0, LIMIT)
     .map((repo) => ({
       name: String(repo.name ?? ''),
       description: typeof repo.description === 'string' ? repo.description : null,
