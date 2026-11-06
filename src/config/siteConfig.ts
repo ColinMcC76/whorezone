@@ -7,6 +7,7 @@ export const siteConfig = {
   socials: {
     github: 'https://github.com/ColinMcC76',
     linkedin: 'https://www.linkedin.com/in/colin-mcc/',
+    discord: 'https://discord.gg/XhaXx5vB3s',
   },
   payments: {
     paypal: 'https://www.paypal.me/colinmcc76',

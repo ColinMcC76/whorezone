@@ -8,11 +8,16 @@ export default function Contact() {
       <Chapter
         eyebrow="Reach out"
         title="Contact"
-        lead="Collaborations, IT projects, or a simple hello."
+        lead="Collaborations, IT projects, or a simple hello — join whorezone on Discord."
       >
         <div className="chapter-actions">
-          <a className="cta" href={`mailto:${siteConfig.email}`}>
-            Email Me
+          <a
+            className="cta"
+            href={siteConfig.socials.discord}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Discord
           </a>
           <a
             className="cta-outline"
