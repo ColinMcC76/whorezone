@@ -5,7 +5,7 @@
     "html_url": "https://github.com/ColinMcC76/whorezone",
     "language": "JavaScript",
     "stargazers_count": 0,
-    "pushed_at": "2026-11-05T22:23:59Z",
+    "pushed_at": "2026-11-06T02:16:23Z",
     "homepage": "https://whorezone.vercel.app"
   },
   {
@@ -14,7 +14,7 @@
     "html_url": "https://github.com/ColinMcC76/GrokSlop",
     "language": "JavaScript",
     "stargazers_count": 0,
-    "pushed_at": "2026-10-31T03:07:31Z",
+    "pushed_at": "2026-11-06T01:24:01Z",
     "homepage": null
   },
   {
@@ -51,60 +51,6 @@
     "language": "Python",
     "stargazers_count": 0,
     "pushed_at": "2026-01-16T02:24:09Z",
-    "homepage": null
-  },
-  {
-    "name": "Shabbot",
-    "description": "AI Discord Bot ",
-    "html_url": "https://github.com/ColinMcC76/Shabbot",
-    "language": "Python",
-    "stargazers_count": 0,
-    "pushed_at": "2025-10-10T22:27:54Z",
-    "homepage": null
-  },
-  {
-    "name": "SiteofShabbot",
-    "description": "website to access shabbot backend. ",
-    "html_url": "https://github.com/ColinMcC76/SiteofShabbot",
-    "language": "Python",
-    "stargazers_count": 0,
-    "pushed_at": "2025-08-30T18:14:55Z",
-    "homepage": null
-  },
-  {
-    "name": "test-app-docker",
-    "description": null,
-    "html_url": "https://github.com/ColinMcC76/test-app-docker",
-    "language": "JavaScript",
-    "stargazers_count": 0,
-    "pushed_at": "2024-10-30T15:15:09Z",
-    "homepage": null
-  },
-  {
-    "name": "missionForm",
-    "description": null,
-    "html_url": "https://github.com/ColinMcC76/missionForm",
-    "language": null,
-    "stargazers_count": 0,
-    "pushed_at": "2023-10-26T06:43:58Z",
-    "homepage": null
-  },
-  {
-    "name": "songscraper",
-    "description": "spotify -> youtube -> mp3-> your music directory",
-    "html_url": "https://github.com/ColinMcC76/songscraper",
-    "language": "Python",
-    "stargazers_count": 0,
-    "pushed_at": "2023-10-24T17:12:20Z",
-    "homepage": null
-  },
-  {
-    "name": "FastAPI",
-    "description": "Working with python to make an API using fastAPI framework",
-    "html_url": "https://github.com/ColinMcC76/FastAPI",
-    "language": null,
-    "stargazers_count": 0,
-    "pushed_at": "2023-10-22T14:31:52Z",
     "homepage": null
   }
 ]

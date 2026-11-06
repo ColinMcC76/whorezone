@@ -2,11 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {
   MAX_ZOOM_FACTOR,
   MIN_ZOOM_FACTOR,
+  SPHERE_RADIUS,
   chooseSwarmCount,
   createHoloSphere,
   framedDistance,
@@ -17,6 +19,47 @@ import {
   type HoloSphereHandle,
   type SiteTheme,
 } from './createHoloSphere';
+
+/** Soft radial dim — light-mode black-hole falloff that darkens white toward the sphere. */
+const BlackHoleDimShader = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    uCenter: { value: new THREE.Vector2(0.5, 0.5) },
+    uAspect: { value: 1 },
+    uRadius: { value: 0.46 },
+    uStrength: { value: 0 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform vec2 uCenter;
+    uniform float uAspect;
+    uniform float uRadius;
+    uniform float uStrength;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      vec2 delta = vUv - uCenter;
+      delta.x *= uAspect;
+      float dist = length(delta);
+      float falloff = smoothstep(uRadius, uRadius * 0.12, dist);
+      float dim = 1.0 - uStrength * falloff;
+      gl_FragColor = vec4(color.rgb * dim, color.a);
+    }
+  `,
+};
+
+function blackHoleStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
+  if (theme !== 'light') return 0;
+  return reduceMotion ? 0.28 : 0.52;
+}
 
 type HoloSphereCanvasProps = {
   interactive?: boolean;
@@ -77,8 +120,9 @@ export function settleAngularVelocity(
 }
 
 function bloomStrengthFor(theme: SiteTheme, reduceMotion: boolean) {
-  if (reduceMotion) return theme === 'dark' ? 0.096 : 0.036;
-  return theme === 'dark' ? 0.288 : 0.12;
+  if (reduceMotion) return theme === 'dark' ? 0.096 : 0.02;
+  // Light mode stays soft so near-black orbs don't bloom into grey haze.
+  return theme === 'dark' ? 0.288 : 0.055;
 }
 
 /** Trackball placement — orientation can tumble past the poles with no hard stops. */
@@ -108,6 +152,7 @@ export default function HoloSphereCanvas({
   const holoRef = useRef<HoloSphereHandle | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const bloomRef = useRef<UnrealBloomPass | null>(null);
+  const dimPassRef = useRef<ShaderPass | null>(null);
   const themeRef = useRef(theme);
   const reduceMotionRef = useRef(reduceMotion);
   const interactiveRef = useRef(interactive);
@@ -154,14 +199,34 @@ export default function HoloSphereCanvas({
     );
     bloomRef.current = bloomPass;
     composer.addPass(bloomPass);
+    const dimPass = new ShaderPass(BlackHoleDimShader);
+    dimPass.uniforms.uStrength.value = blackHoleStrengthFor(
+      themeRef.current,
+      reduceMotionRef.current,
+    );
+    dimPassRef.current = dimPass;
+    composer.addPass(dimPass);
     composer.addPass(new OutputPass());
 
     let fitDistance = framedDistance(1, camera.fov);
     let zoomFactor = 1;
+    const projectedCenter = new THREE.Vector3();
 
     const applyFramedCamera = () => {
       cameraState.distance = fitDistance * zoomFactor;
       placeCamera(camera, cameraState);
+    };
+
+    const updateDimCenter = () => {
+      projectedCenter.copy(LOOK_AT).project(camera);
+      dimPass.uniforms.uCenter.value.set(
+        projectedCenter.x * 0.5 + 0.5,
+        projectedCenter.y * 0.5 + 0.5,
+      );
+      const halfFov = THREE.MathUtils.degToRad(camera.fov) * 0.5;
+      const visibleHeight = 2 * Math.tan(halfFov) * cameraState.distance;
+      const radiusUv = (SPHERE_RADIUS * 1.35) / Math.max(visibleHeight, 0.001);
+      dimPass.uniforms.uRadius.value = THREE.MathUtils.clamp(radiusUv, 0.28, 0.62);
     };
 
     const resize = () => {
@@ -175,7 +240,9 @@ export default function HoloSphereCanvas({
       camera.fov = width / height < 0.72 ? 46 : 38;
       camera.updateProjectionMatrix();
       fitDistance = framedDistance(camera.aspect, camera.fov);
+      dimPass.uniforms.uAspect.value = width / Math.max(height, 1);
       applyFramedCamera();
+      updateDimCenter();
     };
     resize();
     stepSwarm(holo, 0, 0, reduceMotionRef.current);
@@ -363,6 +430,7 @@ export default function HoloSphereCanvas({
 
       stepSwarm(holo, clock, delta, reduceMotionRef.current);
       placeCamera(camera, cameraState);
+      updateDimCenter();
       composer.render();
     };
     loop(performance.now());
@@ -382,6 +450,7 @@ export default function HoloSphereCanvas({
       holoRef.current = null;
       rendererRef.current = null;
       bloomRef.current = null;
+      dimPassRef.current = null;
       canvas.remove();
     };
   }, []);
@@ -390,12 +459,16 @@ export default function HoloSphereCanvas({
     const holo = holoRef.current;
     const renderer = rendererRef.current;
     const bloom = bloomRef.current;
+    const dimPass = dimPassRef.current;
     if (!holo || !renderer) return;
     paintHoloSphere(holo, theme);
     renderer.setClearColor(theme === 'dark' ? 0x0a0a0a : 0xf4f4f4, 1);
     if (bloom) {
       bloom.strength = bloomStrengthFor(theme, reduceMotion);
-      bloom.threshold = theme === 'dark' ? 0.55 : 0.68;
+      bloom.threshold = theme === 'dark' ? 0.55 : 0.72;
+    }
+    if (dimPass) {
+      dimPass.uniforms.uStrength.value = blackHoleStrengthFor(theme, reduceMotion);
     }
   }, [theme, reduceMotion]);
 
