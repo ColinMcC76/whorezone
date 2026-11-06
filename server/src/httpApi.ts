@@ -24,6 +24,7 @@ import {
   updateUserCredentials,
   verifyPassword,
 } from './store';
+import { sendServiceInquiryEmail, serviceInquirySchema } from './serviceInquiry';
 
 const optionalCoverUrl = z.preprocess(
   (value) => (value === '' || value === null || value === undefined ? undefined : value),
@@ -328,6 +329,23 @@ export async function handleApi(request: Request): Promise<Response> {
     const consumed = consumeOAuthTicket(parsed.data.ticket);
     if (!consumed) return json(request, 400, { error: 'Invalid or expired sign-in ticket' });
     return json(request, 200, consumed);
+  }
+
+  if (method === 'POST' && path === '/services/inquiry') {
+    const body = await readJson(request);
+    const parsed = serviceInquirySchema.safeParse(body);
+    if (!parsed.success) return json(request, 400, { error: validationMessage(parsed.error) });
+    if (parsed.data.company && parsed.data.company.trim()) {
+      return json(request, 400, { error: 'Unable to submit inquiry.' });
+    }
+    const sent = await sendServiceInquiryEmail({
+      name: parsed.data.name,
+      email: parsed.data.email,
+      serviceType: parsed.data.serviceType,
+      message: parsed.data.message,
+    });
+    if (!sent.ok) return json(request, sent.status, { error: sent.error });
+    return json(request, 200, { ok: true });
   }
 
   if (path === '/admin/posts' || path.startsWith('/admin/posts/')) {

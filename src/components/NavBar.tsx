@@ -31,6 +31,11 @@ export default function NavBar({ user, onLogout }: NavBarProps) {
             </NavLink>
           </li>
           <li>
+            <NavLink to="/services" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Services
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/resume" className={({ isActive }) => (isActive ? 'active' : '')}>
               Resume
             </NavLink>

@@ -15,6 +15,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Projects from './pages/Projects';
 import Resume from './pages/Resume';
+import Services from './pages/Services';
 import { authApi } from './lib/api';
 import type { User } from './lib/types';
 import { useTheme } from './theme/ThemeProvider';
@@ -139,6 +140,7 @@ function AppRoutes() {
             <Route path="/blog" element={<BlogList />} />
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/resume" element={<Resume />} />
             <Route path="/contact" element={<Contact />} />
             <Route
