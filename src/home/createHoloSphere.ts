@@ -207,11 +207,14 @@ export function paintHoloSphere(holo: HoloSphereHandle, theme: SiteTheme) {
     material.emissive.setHex(0xffffff);
     material.emissiveIntensity = 0.72;
     material.opacity = 0.78;
+    material.roughness = 0.32;
   } else {
-    material.color.setHex(0x1f1f1f);
-    material.emissive.setHex(0x111111);
-    material.emissiveIntensity = 0.24;
-    material.opacity = 0.5;
+    // Near-black dense orbs for a black-hole read on white.
+    material.color.setHex(0x050505);
+    material.emissive.setHex(0x0a0a0a);
+    material.emissiveIntensity = 0.08;
+    material.opacity = 0.92;
+    material.roughness = 0.55;
   }
   material.needsUpdate = true;
 }

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const USERNAME = 'ColinMcC76';
 const LIMIT = 12;
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_FILE = path.resolve(__dirname, '../public/github-repos.json');
 
@@ -59,8 +60,13 @@ async function main() {
     return;
   }
 
+  const cutoff = Date.now() - ONE_YEAR_MS;
   const cards = repos
-    .filter((repo) => !repo.fork && !repo.archived)
+    .filter((repo) => {
+      if (repo.fork || repo.archived) return false;
+      const pushed = Date.parse(String(repo.pushed_at ?? '')) || 0;
+      return pushed >= cutoff;
+    })
     .sort((a, b) => {
       const aTime = Date.parse(String(a.pushed_at ?? '')) || 0;
       const bTime = Date.parse(String(b.pushed_at ?? '')) || 0;
