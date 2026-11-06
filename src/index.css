@@ -614,6 +614,14 @@ select {
   margin-top: 1.5rem;
 }
 
+.contact-pay-actions {
+  margin-top: 1.75rem;
+}
+
+.contact-pay-note {
+  margin-top: 0.85rem;
+}
+
 .site-closing {
   margin-top: 0;
   border-top: 1px solid var(--border);

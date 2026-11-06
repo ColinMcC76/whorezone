@@ -34,6 +34,25 @@ export default function Contact() {
         <p className="meta contact-email">
           Prefer direct email? <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
         </p>
+        <div className="chapter-actions contact-pay-actions">
+          <a
+            className="cta-outline"
+            href={siteConfig.payments.paypal}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            PayPal
+          </a>
+          <a
+            className="cta-outline"
+            href={siteConfig.payments.venmo}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Venmo
+          </a>
+        </div>
+        <p className="meta contact-pay-note">Send a tip or payment via PayPal or Venmo.</p>
       </Chapter>
     </PageShell>
   );

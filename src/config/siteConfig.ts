@@ -8,6 +8,10 @@ export const siteConfig = {
     github: 'https://github.com/ColinMcC76',
     linkedin: 'https://www.linkedin.com/in/colin-mcc/',
   },
+  payments: {
+    paypal: 'https://www.paypal.me/colinmcc76',
+    venmo: 'https://www.venmo.com/Colin-McCulloch-1',
+  },
   githubUsername: 'ColinMcC76',
   resumePdfUrl: '/resume.pdf',
   minecraftArchiveUrl: 'https://minecraft.example.com',
