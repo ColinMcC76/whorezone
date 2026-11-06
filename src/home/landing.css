@@ -1,26 +1,58 @@
+.site-holo-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.site-holo-bg-interactive {
+  pointer-events: auto;
+}
+
+.site-holo-bg .landing-canvas-host,
+.site-holo-bg .landing-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.app-foreground {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+.app-shell-landing .app-foreground,
+.app-shell-landing .app-foreground main {
+  pointer-events: none;
+}
+
+.app-shell-landing .landing-tools,
+.app-shell-landing .landing-nav {
+  pointer-events: auto;
+}
+
 .landing-stage {
   position: relative;
   height: 100vh;
   height: 100dvh;
   min-height: 100svh;
   overflow: hidden;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   padding:
     env(safe-area-inset-top, 0px)
     env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px)
     env(safe-area-inset-left, 0px);
-}
-
-.landing-canvas-host,
-.landing-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  touch-action: none;
 }
 
 .landing-wordmark {

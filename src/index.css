@@ -38,6 +38,11 @@ body {
   min-height: 100vh;
 }
 
+/* Keep a solid fallback under the fixed hologram while content sits in frosted plates. */
+.app-shell {
+  background: transparent;
+}
+
 a {
   color: var(--accent-soft);
 }
@@ -50,10 +55,11 @@ a {
 .navbar {
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   border-bottom: 1px solid var(--border);
   z-index: 30;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .navbar-inner {
@@ -222,10 +228,12 @@ button {
 }
 
 .card {
-  background: var(--bg-elev);
+  background: color-mix(in srgb, var(--bg-elev) 82%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .card-title {
@@ -367,6 +375,7 @@ select {
 .page-cinematic {
   position: relative;
   min-height: 60vh;
+  background: transparent;
 }
 
 .page-rail {
@@ -387,6 +396,7 @@ select {
   text-transform: uppercase;
   font-size: 0.7rem;
   color: var(--muted);
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--bg) 85%, transparent);
 }
 
 .page-index {
@@ -407,6 +417,7 @@ select {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 0.65rem;
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--bg) 85%, transparent);
 }
 
 .page-index a.is-active,
@@ -434,6 +445,12 @@ select {
 .chapter-inner {
   width: min(920px, 78%);
   margin-inline: auto;
+  padding: 1.35rem 1.4rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .chapter-compact .chapter-inner,
@@ -601,7 +618,9 @@ select {
   margin-top: 0;
   border-top: 1px solid var(--border);
   padding: 4rem 0 3rem;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .site-closing-inner {
@@ -609,6 +628,10 @@ select {
   margin-inline: auto;
   display: grid;
   gap: 1.5rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
 }
 
 .site-closing-label {
