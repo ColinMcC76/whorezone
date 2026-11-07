@@ -16,6 +16,54 @@ export const siteConfig = {
   githubUsername: 'ColinMcC76',
   resumePdfUrl: '/resume.pdf',
   minecraftArchiveUrl: 'https://minecraft.example.com',
+  services: {
+    intro:
+      'IT help, hardware and software fixes, and full-stack website work for personal or business needs.',
+    offerings: [
+      {
+        id: 'it-consultation',
+        title: 'IT consultation',
+        description:
+          'Advice on setups, migrations, tooling choices, and practical next steps for home or small business IT.',
+      },
+      {
+        id: 'hardware-repair',
+        title: 'PC / hardware repair & upgrades',
+        description:
+          'Diagnostics and repair for desktops and laptops, docks, displays, and component upgrades.',
+      },
+      {
+        id: 'software-troubleshooting',
+        title: 'Software & OS troubleshooting',
+        description:
+          'Windows and macOS installs, drivers, performance issues, cleanup, and stubborn software problems.',
+      },
+      {
+        id: 'mobile-support',
+        title: 'Mobile device support',
+        description:
+          'Phones and tablets: setup, sync, connectivity, and day-to-day device troubleshooting.',
+      },
+      {
+        id: 'website-development',
+        title: 'Website development (front + back)',
+        description:
+          'Full front-end and back-end builds for personal sites, portfolios, and small business needs.',
+      },
+      {
+        id: 'website-support',
+        title: 'Website support & maintenance',
+        description:
+          'Updates, hosting help, bugfixes, content changes, and ongoing support after launch.',
+      },
+      {
+        id: 'other',
+        title: 'Other / general inquiry',
+        description:
+          'Automation, Discord/bot tooling, project scoping, or anything else technical you need help with.',
+      },
+    ],
+  },
   resume: {
     summary:
       'IT Field Service Technician providing enterprise desktop support and endpoint lifecycle management across clinical and administrative environments in the UK HealthCare system.',

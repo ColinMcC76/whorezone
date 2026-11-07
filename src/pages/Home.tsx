@@ -7,6 +7,7 @@ import '../home/landing.css';
 const landingLinks = [
   { label: 'Blog', to: '/blog' },
   { label: 'Projects', to: '/projects' },
+  { label: 'Services', to: '/services' },
   { label: 'Resume', to: '/resume' },
   { label: 'Contact', to: '/contact' },
 ];

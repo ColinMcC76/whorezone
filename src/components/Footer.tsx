@@ -13,6 +13,7 @@ export default function Footer() {
           <NavLink to="/">Home</NavLink>
           <NavLink to="/blog">Blog</NavLink>
           <NavLink to="/projects">Projects</NavLink>
+          <NavLink to="/services">Services</NavLink>
           <NavLink to="/resume">Resume</NavLink>
           <NavLink to="/contact">Contact</NavLink>
         </nav>

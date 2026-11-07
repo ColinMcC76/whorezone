@@ -757,3 +757,36 @@ select {
   outline: 1px solid var(--text);
   outline-offset: 3px;
 }
+
+.services-list {
+  list-style: none;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.services-item {
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.services-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.services-item-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+}
+
+.services-form-hint {
+  margin-top: -0.35rem;
+}
+
+.services-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
