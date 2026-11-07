@@ -188,3 +188,18 @@ export function updateMyAccount(
     body: JSON.stringify(payload),
   });
 }
+
+export type ServiceInquiryPayload = {
+  name: string;
+  email: string;
+  serviceType: string;
+  message: string;
+  company?: string;
+};
+
+export function submitServiceInquiry(payload: ServiceInquiryPayload): Promise<{ ok: true }> {
+  return request<{ ok: true }>('/services/inquiry', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
