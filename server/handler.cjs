@@ -14061,13 +14061,16 @@ async function persistStore() {
     return;
   try {
     const { put } = await import("@vercel/blob");
-    await put(BLOB_PATH, JSON.stringify({ users, posts }), {
-      access: "private",
-      token,
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json"
-    });
+    await withTimeout(
+      put(BLOB_PATH, JSON.stringify({ users, posts }), {
+        access: "private",
+        token,
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: "application/json"
+      }),
+      4e3
+    );
   } catch (error48) {
     console.error("Blog database save skipped", error48);
   }
@@ -14442,6 +14445,83 @@ function consumeOAuthTicket(ticket) {
   return { token: row.token, user: row.user };
 }
 
+// server/src/serviceInquiry.ts
+var SERVICE_TYPES = [
+  "it-consultation",
+  "hardware-repair",
+  "software-troubleshooting",
+  "mobile-support",
+  "website-development",
+  "website-support",
+  "other"
+];
+var SERVICE_TYPE_LABELS = {
+  "it-consultation": "IT consultation",
+  "hardware-repair": "PC / hardware repair & upgrades",
+  "software-troubleshooting": "Software & OS troubleshooting",
+  "mobile-support": "Mobile device support",
+  "website-development": "Website development (front + back)",
+  "website-support": "Website support & maintenance",
+  other: "Other / general inquiry"
+};
+var serviceInquirySchema = external_exports.object({
+  name: external_exports.string().trim().min(2).max(80),
+  email: external_exports.string().trim().email().max(200),
+  serviceType: external_exports.enum(SERVICE_TYPES),
+  message: external_exports.string().trim().min(20).max(4e3),
+  company: external_exports.string().max(200).optional().or(external_exports.literal(""))
+});
+async function sendServiceInquiryEmail(inquiry, fetchImpl = (...args) => globalThis.fetch(...args)) {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_FROM?.trim();
+  const to = process.env.INQUIRY_TO?.trim() || "colinmccu@outlook.com";
+  if (!apiKey || !from) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Email delivery is not configured. Please reach out via Discord or email instead."
+    };
+  }
+  const label = SERVICE_TYPE_LABELS[inquiry.serviceType];
+  const text = [
+    `New service inquiry from ${inquiry.name}`,
+    `Email: ${inquiry.email}`,
+    `Service: ${label}`,
+    "",
+    "Details / scope:",
+    inquiry.message
+  ].join("\n");
+  let response;
+  try {
+    response = await fetchImpl("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        reply_to: inquiry.email,
+        subject: `Service inquiry: ${label} from ${inquiry.name}`,
+        text
+      })
+    });
+  } catch (error48) {
+    const message = error48 instanceof Error ? error48.message : "Failed to reach Resend";
+    return { ok: false, status: 502, error: message };
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    return {
+      ok: false,
+      status: 502,
+      error: body ? `Resend error (${response.status}): ${body.slice(0, 200)}` : `Resend error (${response.status})`
+    };
+  }
+  return { ok: true };
+}
+
 // server/src/httpApi.ts
 var optionalCoverUrl = external_exports.preprocess(
   (value) => value === "" || value === null || value === void 0 ? void 0 : value,
@@ -14728,6 +14808,24 @@ async function handleApi(request) {
     if (!consumed)
       return json2(request, 400, { error: "Invalid or expired sign-in ticket" });
     return json2(request, 200, consumed);
+  }
+  if (method === "POST" && path === "/services/inquiry") {
+    const body = await readJson(request);
+    const parsed = serviceInquirySchema.safeParse(body);
+    if (!parsed.success)
+      return json2(request, 400, { error: validationMessage(parsed.error) });
+    if (parsed.data.company && parsed.data.company.trim()) {
+      return json2(request, 400, { error: "Unable to submit inquiry." });
+    }
+    const sent = await sendServiceInquiryEmail({
+      name: parsed.data.name,
+      email: parsed.data.email,
+      serviceType: parsed.data.serviceType,
+      message: parsed.data.message
+    });
+    if (!sent.ok)
+      return json2(request, sent.status, { error: sent.error });
+    return json2(request, 200, { ok: true });
   }
   if (path === "/admin/posts" || path.startsWith("/admin/posts/")) {
     const auth = await currentUser(request);
