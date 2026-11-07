@@ -114,6 +114,7 @@ a {
 .oauth-row {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.6rem;
   margin: 1rem 0;
 }
@@ -225,6 +226,7 @@ button {
 
 .chapter.chapter-wide .chapter-body {
   max-width: none;
+  width: 100%;
 }
 
 .card {
@@ -309,11 +311,13 @@ button {
   display: grid;
   gap: 0.9rem;
   max-width: 800px;
+  width: 100%;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   padding: 1rem;
   border-radius: var(--radius);
-  margin-bottom: 1.2rem;
+  margin: 0 auto 1.2rem;
+  text-align: left;
 }
 
 .admin-form label {
@@ -340,6 +344,7 @@ select {
   display: flex;
   gap: 0.65rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .admin-table-wrap {
@@ -451,6 +456,7 @@ select {
   background: color-mix(in srgb, var(--bg) 84%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  text-align: center;
 }
 
 .chapter-compact .chapter-inner,
@@ -483,6 +489,7 @@ select {
 .chapter-body {
   color: var(--muted);
   max-width: 58ch;
+  margin-inline: auto;
 }
 
 .chapter-lead {
@@ -504,6 +511,7 @@ select {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.6rem;
+  justify-content: center;
 }
 
 .post-band {
@@ -544,6 +552,8 @@ select {
   gap: 0.9rem;
   color: var(--text);
   max-width: 52ch;
+  margin-inline: auto;
+  text-align: left;
 }
 
 .resume-list li {
@@ -597,8 +607,9 @@ select {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.55rem 0.75rem;
-  margin: 0.85rem 0 0;
+  margin: 0.85rem auto 0;
   padding: 0;
   max-width: 58ch;
 }
@@ -636,6 +647,8 @@ select {
   margin-inline: auto;
   display: grid;
   gap: 1.5rem;
+  justify-items: center;
+  text-align: center;
   padding: 1.1rem 1.2rem 1.2rem;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 4px);
@@ -653,6 +666,7 @@ select {
 .site-closing-socials {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem 1.4rem;
 }
 
@@ -673,8 +687,10 @@ select {
 .site-closing-meta {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
   gap: 1rem;
+  width: 100%;
   border-top: 1px solid var(--border);
   padding-top: 1.2rem;
 }
@@ -762,6 +778,8 @@ select {
   list-style: none;
   display: grid;
   gap: 1.25rem;
+  margin-inline: auto;
+  text-align: center;
 }
 
 .services-item {
