@@ -104,6 +104,14 @@ function isPublicRead(req) {
   return path === '/health' || path === '/posts' || path === '/blog/posts' || /^\/(?:blog\/)?posts\/[^/]+$/.test(path);
 }
 
+function serializeNodeBody(body) {
+  if (body == null) return undefined;
+  if (Buffer.isBuffer(body)) return body.length > 0 ? body : undefined;
+  if (typeof body === 'string') return body.length > 0 ? Buffer.from(body) : undefined;
+  if (typeof body === 'object') return Buffer.from(JSON.stringify(body));
+  return Buffer.from(String(body));
+}
+
 function toRequest(req) {
   const host = req.headers.host || 'localhost';
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -116,11 +124,20 @@ function toRequest(req) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return Promise.resolve(new Request(url, { method: req.method, headers }));
   }
+
+  // Vercel Node functions often pre-parse JSON into req.body and end the stream,
+  // so reading only the raw stream yields an empty payload.
+  const parsedBody = serializeNodeBody(req.body);
+  if (parsedBody) {
+    return Promise.resolve(new Request(url, { method: req.method, headers, body: parsedBody }));
+  }
+
   const chunks = [];
   return new Promise((resolve, reject) => {
     const finish = () => {
-      const body = Buffer.concat(chunks);
-      resolve(new Request(url, { method: req.method, headers, body: body.length > 0 ? body : undefined }));
+      const streamed = Buffer.concat(chunks);
+      const body = streamed.length > 0 ? streamed : serializeNodeBody(req.body);
+      resolve(new Request(url, { method: req.method, headers, body: body && body.length > 0 ? body : undefined }));
     };
     if (req.readableEnded || req.complete) {
       finish();
