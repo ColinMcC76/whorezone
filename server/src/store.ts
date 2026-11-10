@@ -6,8 +6,39 @@ const BLOB_PATH = 'mcwhorezone/blog.json';
 let users: User[] = [];
 let posts: BlogPost[] = [];
 let nextUserId = 2;
-let nextPostId = 5;
+let nextPostId = 7;
 let ready: Promise<void> | null = null;
+
+function syncSeedPosts(): boolean {
+  let changed = false;
+  for (const seed of SEED_POSTS) {
+    const existing = posts.find((post) => post.slug === seed.slug);
+    if (!existing) {
+      posts.push({ ...seed, id: nextPostId });
+      nextPostId += 1;
+      changed = true;
+      continue;
+    }
+    if (
+      existing.title !== seed.title ||
+      existing.summary !== seed.summary ||
+      existing.content !== seed.content ||
+      existing.status !== seed.status ||
+      existing.publishedAt !== seed.publishedAt
+    ) {
+      existing.title = seed.title;
+      existing.summary = seed.summary;
+      existing.content = seed.content;
+      existing.status = seed.status;
+      existing.publishedAt = seed.publishedAt;
+      existing.updatedAt = seed.updatedAt;
+      existing.coverImageUrl = seed.coverImageUrl;
+      changed = true;
+    }
+  }
+  if (changed) reindex();
+  return changed;
+}
 
 export async function hashPassword(password: string, salt: string): Promise<string> {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
@@ -68,6 +99,9 @@ async function restoreFromBlob(): Promise<void> {
     users = parsed.users.map((user) => ({ ...user }));
   }
   reindex();
+  if (syncSeedPosts()) {
+    await persistStore();
+  }
 }
 
 function withTimeout<T>(work: Promise<T>, ms: number): Promise<T | undefined> {

@@ -73,8 +73,9 @@ export default function Servers({ showToast }: ServersProps) {
         ))}
       </div>
       <p style={{ marginTop: '2rem', color: 'var(--color-muted)', fontSize: '0.9rem' }}>
-        Tip: Use the IP copied above for all modes. Specific instructions and mod
-        packs are available on Discord.
+        Java: {siteConfig.javaServer.address}. Bedrock: {siteConfig.bedrockServer.address}.
+        A Java join wakes a sleeping world; Bedrock connects after it is up. Mod packs and
+        mode details are on Discord.
       </p>
     </div>
   );
