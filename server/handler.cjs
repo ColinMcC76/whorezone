@@ -13967,9 +13967,9 @@ var SEED_POSTS = [
     id: 5,
     slug: "watching-the-same-frame",
     title: "Watching the same frame, without waking the whole server",
-    summary: "GrokSlop adds a shared Stream tab, quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.",
+    summary: "GrokSlop\u2019s panel at whorezone.party gets a shared Stream tab, quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.",
     content: [
-      "GrokSlop's control panel already had Controls, a YouTube queue, and a soundboard. This round adds a shared Stream tab, a quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.",
+      "GrokSlop's control panel already had Controls, a YouTube queue, and a soundboard. This round adds a shared Stream tab, a quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot. The live interface is at whorezone.party.",
       "One picture for everyone on the server",
       "The new Stream tab plays YouTube in the panel. Audio stays in the browser. Nothing is sent into the Discord voice channel.",
       "Everyone who opens Stream for the same server is on the same video. Play, pause, seek, skip, volume, and the queue are shared. The panel keeps one clock, and each browser follows it, so people stay on the same moment instead of drifting off into their own copies. Add a link, a playlist, or a search, then reorder or remove what is coming up.",
@@ -13984,7 +13984,7 @@ var SEED_POSTS = [
     status: "published",
     publishedAt: "2026-11-09T15:00:00.000Z",
     createdAt: "2026-11-09T15:00:00.000Z",
-    updatedAt: "2026-11-09T15:00:00.000Z",
+    updatedAt: "2026-11-09T16:00:00.000Z",
     authorId: 1
   }
 ];
@@ -13996,18 +13996,30 @@ var posts = [];
 var nextUserId = 2;
 var nextPostId = 6;
 var ready = null;
-function ensureSeedPostsPresent() {
-  let added = false;
+function syncSeedPosts() {
+  let changed = false;
   for (const seed2 of SEED_POSTS) {
-    if (posts.some((post) => post.slug === seed2.slug))
+    const existing = posts.find((post) => post.slug === seed2.slug);
+    if (!existing) {
+      posts.push({ ...seed2, id: nextPostId });
+      nextPostId += 1;
+      changed = true;
       continue;
-    posts.push({ ...seed2, id: nextPostId });
-    nextPostId += 1;
-    added = true;
+    }
+    if (existing.title !== seed2.title || existing.summary !== seed2.summary || existing.content !== seed2.content || existing.status !== seed2.status || existing.publishedAt !== seed2.publishedAt) {
+      existing.title = seed2.title;
+      existing.summary = seed2.summary;
+      existing.content = seed2.content;
+      existing.status = seed2.status;
+      existing.publishedAt = seed2.publishedAt;
+      existing.updatedAt = seed2.updatedAt;
+      existing.coverImageUrl = seed2.coverImageUrl;
+      changed = true;
+    }
   }
-  if (added)
+  if (changed)
     reindex();
-  return added;
+  return changed;
 }
 async function hashPassword(password, salt) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, [
@@ -14063,7 +14075,7 @@ async function restoreFromBlob() {
     users = parsed.users.map((user) => ({ ...user }));
   }
   reindex();
-  if (ensureSeedPostsPresent()) {
+  if (syncSeedPosts()) {
     await persistStore();
   }
 }

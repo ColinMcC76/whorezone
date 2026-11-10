@@ -9,16 +9,35 @@ let nextUserId = 2;
 let nextPostId = 6;
 let ready: Promise<void> | null = null;
 
-function ensureSeedPostsPresent(): boolean {
-  let added = false;
+function syncSeedPosts(): boolean {
+  let changed = false;
   for (const seed of SEED_POSTS) {
-    if (posts.some((post) => post.slug === seed.slug)) continue;
-    posts.push({ ...seed, id: nextPostId });
-    nextPostId += 1;
-    added = true;
+    const existing = posts.find((post) => post.slug === seed.slug);
+    if (!existing) {
+      posts.push({ ...seed, id: nextPostId });
+      nextPostId += 1;
+      changed = true;
+      continue;
+    }
+    if (
+      existing.title !== seed.title ||
+      existing.summary !== seed.summary ||
+      existing.content !== seed.content ||
+      existing.status !== seed.status ||
+      existing.publishedAt !== seed.publishedAt
+    ) {
+      existing.title = seed.title;
+      existing.summary = seed.summary;
+      existing.content = seed.content;
+      existing.status = seed.status;
+      existing.publishedAt = seed.publishedAt;
+      existing.updatedAt = seed.updatedAt;
+      existing.coverImageUrl = seed.coverImageUrl;
+      changed = true;
+    }
   }
-  if (added) reindex();
-  return added;
+  if (changed) reindex();
+  return changed;
 }
 
 export async function hashPassword(password: string, salt: string): Promise<string> {
@@ -80,7 +99,7 @@ async function restoreFromBlob(): Promise<void> {
     users = parsed.users.map((user) => ({ ...user }));
   }
   reindex();
-  if (ensureSeedPostsPresent()) {
+  if (syncSeedPosts()) {
     await persistStore();
   }
 }

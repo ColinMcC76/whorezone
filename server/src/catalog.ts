@@ -87,9 +87,9 @@ export const SEED_POSTS: BlogPost[] = [
     slug: 'watching-the-same-frame',
     title: 'Watching the same frame, without waking the whole server',
     summary:
-      'GrokSlop adds a shared Stream tab, quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.',
+      'GrokSlop’s panel at whorezone.party gets a shared Stream tab, quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.',
     content: [
-      "GrokSlop's control panel already had Controls, a YouTube queue, and a soundboard. This round adds a shared Stream tab, a quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot.",
+      "GrokSlop's control panel already had Controls, a YouTube queue, and a soundboard. This round adds a shared Stream tab, a quieter equipment-check sound-off, and a launcher that brings the Cloudflare tunnel up with the bot. The live interface is at whorezone.party.",
       'One picture for everyone on the server',
       'The new Stream tab plays YouTube in the panel. Audio stays in the browser. Nothing is sent into the Discord voice channel.',
       'Everyone who opens Stream for the same server is on the same video. Play, pause, seek, skip, volume, and the queue are shared. The panel keeps one clock, and each browser follows it, so people stay on the same moment instead of drifting off into their own copies. Add a link, a playlist, or a search, then reorder or remove what is coming up.',
@@ -104,7 +104,7 @@ export const SEED_POSTS: BlogPost[] = [
     status: 'published',
     publishedAt: '2026-11-09T15:00:00.000Z',
     createdAt: '2026-11-09T15:00:00.000Z',
-    updatedAt: '2026-11-09T15:00:00.000Z',
+    updatedAt: '2026-11-09T16:00:00.000Z',
     authorId: 1,
   },
 ];
