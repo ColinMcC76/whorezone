@@ -37,7 +37,7 @@ describe('Vercel Node handler', () => {
     expect(posts.status).toBe(200);
     const body = (await posts.json()) as Array<{ slug: string; status: string }>;
     expect(body.length).toBeGreaterThan(1);
-    expect(body[0]?.slug).toBe('welcome-to-my-new-site');
+    expect(body[0]?.slug).toBe('watching-the-same-frame');
     expect(body.every((post) => post.status === 'published')).toBe(true);
 
     const draft = await fetch(`http://127.0.0.1:${port}/api/posts/private-draft`);

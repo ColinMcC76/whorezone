@@ -70,7 +70,7 @@ describe('Public blog', () => {
     expect(Array.isArray(posts.body)).toBe(true);
     expect(posts.body.length).toBeGreaterThan(1);
     expect(posts.body.every((post: { status: string }) => post.status === 'published')).toBe(true);
-    expect(posts.body[0].slug).toBe('welcome-to-my-new-site');
+    expect(posts.body[0].slug).toBe('watching-the-same-frame');
     expect(posts.headers.get('content-type')).toContain('application/json');
   });
 
@@ -83,13 +83,17 @@ describe('Public blog', () => {
   it('returns published posts at the legacy /api/blog/posts mount', async () => {
     const posts = await api('/api/blog/posts');
     expect(posts.status).toBe(200);
-    expect(posts.body[0].slug).toBe('welcome-to-my-new-site');
+    expect(posts.body[0].slug).toBe('watching-the-same-frame');
   });
 
   it('returns one published post by slug and hides drafts', async () => {
     const post = await api('/api/posts/notes-from-the-workbench');
     expect(post.status).toBe(200);
     expect(post.body.title).toBe('Notes From the Workbench');
+
+    const latest = await api('/api/posts/watching-the-same-frame');
+    expect(latest.status).toBe(200);
+    expect(latest.body.title).toBe('Watching the same frame, without waking the whole server');
 
     const draft = await api('/api/posts/private-draft');
     expect(draft.status).toBe(404);

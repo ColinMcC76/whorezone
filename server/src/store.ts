@@ -6,8 +6,20 @@ const BLOB_PATH = 'mcwhorezone/blog.json';
 let users: User[] = [];
 let posts: BlogPost[] = [];
 let nextUserId = 2;
-let nextPostId = 5;
+let nextPostId = 6;
 let ready: Promise<void> | null = null;
+
+function ensureSeedPostsPresent(): boolean {
+  let added = false;
+  for (const seed of SEED_POSTS) {
+    if (posts.some((post) => post.slug === seed.slug)) continue;
+    posts.push({ ...seed, id: nextPostId });
+    nextPostId += 1;
+    added = true;
+  }
+  if (added) reindex();
+  return added;
+}
 
 export async function hashPassword(password: string, salt: string): Promise<string> {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
@@ -68,6 +80,9 @@ async function restoreFromBlob(): Promise<void> {
     users = parsed.users.map((user) => ({ ...user }));
   }
   reindex();
+  if (ensureSeedPostsPresent()) {
+    await persistStore();
+  }
 }
 
 function withTimeout<T>(work: Promise<T>, ms: number): Promise<T | undefined> {
