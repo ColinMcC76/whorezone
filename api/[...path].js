@@ -56,6 +56,21 @@ const fallbackPosts = [
     updatedAt: '2026-11-09T16:00:00.000Z',
     authorId: 1,
   },
+  {
+    id: 6,
+    slug: 'server-back-up-on-26-3',
+    title: 'The server is back up on 26.3',
+    summary:
+      'The world is online again on Minecraft 26.3. Java joins at play.mcwhorezone.com; Bedrock joins at br.mcwhorezone.com. The machine sleeps when empty and wakes on a Java join.',
+    content:
+      'The world is online again, now running Minecraft 26.3.\nJava: play.mcwhorezone.com\nBedrock: br.mcwhorezone.com\nAdd it in the server list and join. Your old world is the same one.\nIt sleeps when nobody is playing\nThe machine no longer leaves the world running all day. When the server list says it is sleeping, a Java player joining play.mcwhorezone.com is what starts it.\nThe first person in may sit on “Connecting” for a few seconds while the world boots. If it kicks you and says to rejoin in a minute, connect again. Everyone after that joins normally.\nAfter the last player leaves, the world stays up for 10 minutes, saves, and shuts down. The next Java join starts it again.\nBedrock\nbr.mcwhorezone.com works while the world is already running. A Bedrock join cannot wake a sleeping server. If the Java listing says the server is sleeping, someone needs to join from Java first. Once it is up, Bedrock can connect as usual.',
+    coverImageUrl: null,
+    status: 'published',
+    publishedAt: '2026-11-09T18:00:00.000Z',
+    createdAt: '2026-11-09T18:00:00.000Z',
+    updatedAt: '2026-11-09T18:00:00.000Z',
+    authorId: 1,
+  },
 ];
 
 function firstQuery(value) {

@@ -7,12 +7,12 @@ export default function Faq() {
     {
       question: 'How do I add the server in Minecraft?',
       answer:
-        'In Minecraft, go to Multiplayer → Add Server and paste the IP address (play.mcwhorezone.com). Give it a name and save. You can now join the server from your list.',
+        'Java: Multiplayer → Add Server → play.mcwhorezone.com. Bedrock: Servers → Add Server → br.mcwhorezone.com. If the Java list says the server is sleeping, a Java join wakes it; Bedrock can connect after it is up.',
     },
     {
       question: 'What version of Minecraft do I need?',
       answer:
-        'Our Java and Bedrock servers run the latest stable versions. Check the home page for current version details and update your client accordingly.',
+        'The world is on Minecraft 26.3 for both Java and Bedrock. Update your client to that version before joining.',
     },
     {
       question: 'Can I join if I’m under 18?',

@@ -13986,6 +13986,30 @@ var SEED_POSTS = [
     createdAt: "2026-11-09T15:00:00.000Z",
     updatedAt: "2026-11-09T16:00:00.000Z",
     authorId: 1
+  },
+  {
+    id: 6,
+    slug: "server-back-up-on-26-3",
+    title: "The server is back up on 26.3",
+    summary: "The world is online again on Minecraft 26.3. Java joins at play.mcwhorezone.com; Bedrock joins at br.mcwhorezone.com. The machine sleeps when empty and wakes on a Java join.",
+    content: [
+      "The world is online again, now running Minecraft 26.3.",
+      "Java: play.mcwhorezone.com",
+      "Bedrock: br.mcwhorezone.com",
+      "Add it in the server list and join. Your old world is the same one.",
+      "It sleeps when nobody is playing",
+      "The machine no longer leaves the world running all day. When the server list says it is sleeping, a Java player joining play.mcwhorezone.com is what starts it.",
+      "The first person in may sit on \u201CConnecting\u201D for a few seconds while the world boots. If it kicks you and says to rejoin in a minute, connect again. Everyone after that joins normally.",
+      "After the last player leaves, the world stays up for 10 minutes, saves, and shuts down. The next Java join starts it again.",
+      "Bedrock",
+      "br.mcwhorezone.com works while the world is already running. A Bedrock join cannot wake a sleeping server. If the Java listing says the server is sleeping, someone needs to join from Java first. Once it is up, Bedrock can connect as usual."
+    ].join("\n"),
+    coverImageUrl: null,
+    status: "published",
+    publishedAt: "2026-11-09T18:00:00.000Z",
+    createdAt: "2026-11-09T18:00:00.000Z",
+    updatedAt: "2026-11-09T18:00:00.000Z",
+    authorId: 1
   }
 ];
 
@@ -13994,7 +14018,7 @@ var BLOB_PATH = "mcwhorezone/blog.json";
 var users = [];
 var posts = [];
 var nextUserId = 2;
-var nextPostId = 6;
+var nextPostId = 7;
 var ready = null;
 function syncSeedPosts() {
   let changed = false;

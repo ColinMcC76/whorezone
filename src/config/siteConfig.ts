@@ -16,6 +16,14 @@ export const siteConfig = {
   githubUsername: 'ColinMcC76',
   resumePdfUrl: '/resume.pdf',
   minecraftArchiveUrl: 'https://minecraft.example.com',
+  javaServer: {
+    address: 'play.mcwhorezone.com',
+    version: '26.3',
+  },
+  bedrockServer: {
+    address: 'br.mcwhorezone.com',
+    version: '26.3',
+  },
   services: {
     intro:
       'IT help, hardware and software fixes, and full-stack website work for personal or business needs.',

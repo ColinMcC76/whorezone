@@ -6,7 +6,7 @@ const BLOB_PATH = 'mcwhorezone/blog.json';
 let users: User[] = [];
 let posts: BlogPost[] = [];
 let nextUserId = 2;
-let nextPostId = 6;
+let nextPostId = 7;
 let ready: Promise<void> | null = null;
 
 function syncSeedPosts(): boolean {
